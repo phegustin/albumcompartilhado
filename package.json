@@ -1,0 +1,37 @@
+{
+  "name": "albumcompartilhado",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "db:init": "node scripts/pg.mjs init",
+    "db:start": "node scripts/pg.mjs start",
+    "db:stop": "node scripts/pg.mjs stop"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "@supabase/supabase-js": "^2.118.0",
+    "framer-motion": "^14.6.0",
+    "lucide-react": "^1.61.0",
+    "next": "16.4.3",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@embedded-postgres/linux-x64": "^17.10.0-beta.17",
+    "@tailwindcss/turbopack": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "embedded-postgres": "^17.10.0-beta.17",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.3",
+    "prisma": "^6.19.3",
+    "tailwindcss": "^4",
+    "tsx": "^4.23.15",
+    "typescript": "^5"
+  }
+}
