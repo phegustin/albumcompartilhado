@@ -46,3 +46,7 @@ next-env.d.ts
 # Midias enviadas em desenvolvimento (storage driver local)
 /public/uploads/
 
+
+# Excecao: o .env.example e o MODELO sem segredos e deve ir para o Git.
+# O .env em si continua ignorado (contem senhas de verdade).
+!.env.example
