@@ -23,7 +23,7 @@ function caminhoSeguro(path: string): string | null {
   return join(process.cwd(), "public", "uploads", normalizado);
 }
 
-export async function POST(request: Request) {
+async function receber(request: Request) {
   if (process.env.STORAGE_DRIVER === "supabase" || process.env.STORAGE_DRIVER === "r2") {
     return Response.json({ error: "driver local desabilitado" }, { status: 403 });
   }
@@ -51,4 +51,16 @@ export async function POST(request: Request) {
   await writeFile(destino, bytes);
 
   return Response.json({ ok: true, path });
+}
+
+/**
+ * PUT é o método que o navegador usa de verdade (é o que uma presigned URL
+ * do S3/R2/Supabase exige). O POST fica só para testes manuais via curl.
+ */
+export async function POST(request: Request) {
+  return receber(request);
+}
+
+export async function PUT(request: Request) {
+  return receber(request);
 }
