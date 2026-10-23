@@ -45,3 +45,6 @@ next-env.d.ts
 
 # Midias enviadas em desenvolvimento (storage driver local)
 /public/uploads/
+
+# Imagens do seed (vao para o Supabase Storage, nao para o Git)
+/seed-assets/
