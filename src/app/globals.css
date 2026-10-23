@@ -1,26 +1,86 @@
 @import "tailwindcss";
 
+/*
+ * Paleta do evento (CSS Variables).
+ * O valor default é "Olive & Gold"; cada página de álbum sobrescreve essas
+ * variáveis via style inline (src/lib/themes.ts), o que troca o tema inteiro
+ * sem recarregar nada.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --album-bg: #faf8f5;
+  --album-surface: #ffffff;
+  --album-primary: #213028;
+  --album-accent: #c5a270;
+  --album-text: #1e2421;
+  --album-muted: #6b7269;
+  --album-border: #e7e2d8;
+  --album-on-primary: #faf8f5;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Famílias tipográficas (fontes self-hosted via @fontsource). */
+  --font-display: "Cormorant Garamond", ui-serif, Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+
+  /* Cores do álbum — espelham as variáveis acima. */
+  --color-album-bg: var(--album-bg);
+  --color-album-surface: var(--album-surface);
+  --color-album-primary: var(--album-primary);
+  --color-album-accent: var(--album-accent);
+  --color-album-text: var(--album-text);
+  --color-album-muted: var(--album-muted);
+  --color-album-border: var(--album-border);
+  --color-album-on-primary: var(--album-on-primary);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--album-bg);
+  color: var(--album-text);
+  font-family: var(--font-sans);
+  /* Evita o "pulo" de layout quando um modal trava o scroll. */
+  overflow-x: hidden;
+}
+
+/* Respeita o notch / barra inferior do iPhone. */
+.pb-safe {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
+}
+
+.pt-safe {
+  padding-top: calc(env(safe-area-inset-top, 0px) + 1rem);
+}
+
+/* Esconde a barra de rolagem nas "stories" e no carrossel do telão. */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgb(197 162 112 / 0.5);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 14px rgb(197 162 112 / 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgb(197 162 112 / 0);
+  }
+}
+
+/* Botão principal pulsante (thumb-zone), usado no celular do convidado. */
+.animate-pulse-ring {
+  animation: pulse-ring 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
