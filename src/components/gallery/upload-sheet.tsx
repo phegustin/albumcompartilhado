@@ -8,8 +8,12 @@
  *   2) gera a miniatura WebP no próprio celular
  *   3) faz PUT direto no storage (original + miniatura), com progresso real
  *   4) confirma em /api/gallery/confirm para gravar no banco
+ *
+ * Visual segue a mesma linguagem do resto do app: sem bordas pesadas,
+ * cantos suaves, sombra leve e muito respiro.
  */
 import { useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { AlertCircle, Check, Loader2, RotateCcw, Upload, X } from "lucide-react";
 
 import { gerarMiniaturaWebp } from "@/lib/client/thumb";
@@ -190,86 +194,84 @@ export function UploadSheet({
     if (ocupado) return;
     setOcupado(true);
 
-    const pendentes = fila.filter((i) => i.status !== "ok");
     // Um por vez: evita sobrecarregar o 4G do salão.
-    for (const item of pendentes) {
+    for (const item of fila.filter((i) => i.status !== "ok")) {
       await processar(item);
     }
 
     setOcupado(false);
-
-    if (fila.some((i) => i.status === "ok")) {
-      onConcluido();
-    }
+    if (fila.some((i) => i.status === "ok")) onConcluido();
   }
 
   const concluidos = fila.filter((i) => i.status === "ok").length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm">
-      <div
-        className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-album-border bg-album-surface p-5"
-        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.25rem)" }}
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm">
+      <motion.div
+        initial={{ y: 40 }}
+        animate={{ y: 0 }}
+        transition={{ type: "spring", damping: 26, stiffness: 260 }}
+        className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-album-surface p-6 shadow-2xl"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.5rem)" }}
       >
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="font-display text-2xl font-semibold text-album-text">
-            Enviar lembranças
-          </h3>
+        <div className="mb-5 flex items-center justify-between">
+          <div>
+            <h3 className="font-display text-2xl font-semibold text-album-text">
+              Enviar lembranças
+            </h3>
+            <p className="mt-0.5 text-sm text-album-muted">
+              Como <strong className="text-album-text">{guestName}</strong>
+            </p>
+          </div>
           <button
             onClick={onFechar}
-            className="rounded-full p-2 text-album-muted hover:bg-album-bg"
+            className="rounded-full bg-album-bg p-2 text-album-muted"
             aria-label="Fechar"
           >
             <X className="size-5" />
           </button>
         </div>
 
-        <p className="mb-4 text-sm text-album-muted">
-          Enviando como <strong className="text-album-text">{guestName}</strong>
-        </p>
-
         {/* Seletor de momento */}
-        <div className="mb-4">
-          <p className="mb-2 text-xs font-medium tracking-wider text-album-muted uppercase">
-            Momento
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {CATEGORIAS.map((c) => (
+        <p className="mb-2 text-[11px] font-medium tracking-[0.18em] text-album-muted uppercase">
+          Momento
+        </p>
+        <div className="mb-5 flex flex-wrap gap-2">
+          {CATEGORIAS.map((c) => {
+            const ativo = categoria === c.valor;
+            return (
               <button
                 key={c.valor}
                 onClick={() => setCategoria(c.valor)}
-                className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                  categoria === c.valor
-                    ? "border-album-primary text-album-on-primary"
-                    : "border-album-border text-album-text hover:bg-album-bg"
-                }`}
-                style={
-                  categoria === c.valor
-                    ? { background: "var(--album-primary)" }
-                    : undefined
-                }
+                className="rounded-full px-3.5 py-2 text-[13px] font-medium transition-colors"
+                style={{
+                  background: ativo ? "var(--album-primary)" : "transparent",
+                  color: ativo ? "var(--album-on-primary)" : "var(--album-muted)",
+                  boxShadow: ativo
+                    ? "none"
+                    : "inset 0 0 0 1px var(--album-border)",
+                }}
               >
                 {c.rotulo}
               </button>
-            ))}
-          </div>
+            );
+          })}
         </div>
 
-        {/* Legenda */}
         <input
           value={legenda}
           onChange={(e) => setLegenda(e.target.value)}
           placeholder="Legenda carinhosa (opcional)"
-          className="mb-4 w-full rounded-xl border border-album-border bg-album-bg px-3 py-2.5 text-sm text-album-text placeholder:text-album-muted focus:border-album-accent focus:outline-none"
+          className="mb-4 w-full rounded-2xl bg-album-bg px-4 py-3.5 text-sm text-album-text placeholder:text-album-muted focus:ring-2 focus:ring-album-accent focus:outline-none"
         />
 
-        {/* Botão de escolher arquivos */}
         <button
           onClick={() => inputRef.current?.click()}
-          className="mb-4 flex w-full flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-album-border py-8 text-album-muted hover:border-album-accent hover:text-album-text"
+          className="mb-5 flex w-full flex-col items-center gap-2 rounded-3xl bg-album-bg py-9 text-album-muted transition-colors hover:text-album-text"
+          style={{ boxShadow: "inset 0 0 0 1.5px var(--album-border)" }}
         >
           <Upload className="size-6" />
-          <span className="text-sm font-medium">
+          <span className="text-sm font-medium text-album-text">
             Escolher fotos, vídeos ou áudio
           </span>
           <span className="text-xs">até 25 arquivos por vez</span>
@@ -284,22 +286,18 @@ export function UploadSheet({
           onChange={(e) => adicionarArquivos(e.target.files)}
         />
 
-        {/* Fila com progresso individual */}
         {fila.length > 0 && (
-          <ul className="mb-4 space-y-2">
+          <ul className="mb-5 space-y-2">
             {fila.map((item) => (
-              <li
-                key={item.id}
-                className="rounded-xl border border-album-border bg-album-bg p-3"
-              >
+              <li key={item.id} className="rounded-2xl bg-album-bg p-3.5">
                 <div className="flex items-center gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-medium text-album-text">
                       {item.arquivo.name}
                     </p>
-                    <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-album-border">
+                    <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-album-border">
                       <div
-                        className="h-full rounded-full transition-all"
+                        className="h-full rounded-full transition-all duration-200"
                         style={{
                           width: `${item.progresso}%`,
                           background:
@@ -320,7 +318,7 @@ export function UploadSheet({
                   {item.status === "erro" && (
                     <button
                       onClick={() => processar(item)}
-                      className="shrink-0 rounded-full p-1 text-album-muted hover:bg-album-surface"
+                      className="shrink-0 rounded-full bg-album-surface p-1.5 text-album-muted"
                       aria-label="Tentar novamente"
                     >
                       <RotateCcw className="size-4" />
@@ -329,9 +327,9 @@ export function UploadSheet({
                 </div>
 
                 {item.status === "erro" && (
-                  <p className="mt-1.5 flex items-center gap-1 text-[11px] text-red-600">
+                  <p className="mt-2 flex items-center gap-1 text-[11px] text-red-600">
                     <AlertCircle className="size-3" />
-                    {item.erro} — toque em tentar novamente
+                    {item.erro} — toque para tentar de novo
                   </p>
                 )}
               </li>
@@ -342,7 +340,7 @@ export function UploadSheet({
         <button
           onClick={enviarTudo}
           disabled={ocupado || fila.length === 0 || concluidos === fila.length}
-          className="w-full rounded-xl px-4 py-3.5 text-sm font-semibold text-album-on-primary transition-opacity hover:opacity-90 disabled:opacity-40"
+          className="w-full rounded-2xl px-4 py-4 text-sm font-semibold text-album-on-primary transition-transform active:scale-[.98] disabled:opacity-40"
           style={{ background: "var(--album-primary)" }}
         >
           {ocupado
@@ -351,7 +349,7 @@ export function UploadSheet({
               ? "Escolha os arquivos primeiro"
               : `Enviar ${fila.length} ${fila.length === 1 ? "arquivo" : "arquivos"}`}
         </button>
-      </div>
+      </motion.div>
     </div>
   );
 }
