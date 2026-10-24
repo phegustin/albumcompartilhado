@@ -23,6 +23,14 @@ import { themeStyle } from "@/lib/themes";
  * É a página que você abre na reunião com a noiva ou a cerimonialista:
  * apresenta o produto e dá os links diretos para testar cada visão ao vivo.
  */
+
+/**
+ * Dinâmica de propósito. Sem isso o Next tenta pré-renderizar esta página
+ * durante o build — e ela consulta o banco, o que (a) faz o build falhar
+ * quando o banco não está alcançável e (b) congelaria a lista de eventos
+ * na data do deploy. Aqui os dados precisam estar sempre frescos.
+ */
+export const dynamic = "force-dynamic";
 export default async function Home() {
   const eventos = await db.select().from(albums).orderBy(desc(albums.createdAt));
 

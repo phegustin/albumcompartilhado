@@ -8,9 +8,24 @@
  * O Pool é guardado no globalThis para não abrir uma conexão nova a cada
  * recarregamento do hot-reload do Next.js.
  */
+import { setDefaultResultOrder } from "node:dns";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import * as schema from "./schema";
+
+/**
+ * Prefere IPv4 ao resolver o host do banco.
+ *
+ * Motivo real: o Node moderno ordena os endereços como o DNS devolve, o que
+ * frequentemente coloca o IPv6 na frente. O host da Supabase tem IPv6, mas a
+ * rede das lambdas da Vercel não alcança IPv6 — a conexão morria com
+ * ENETUNREACH antes de chegar no banco.
+ */
+try {
+  setDefaultResultOrder("ipv4first");
+} catch {
+  /* ambientes sem essa API seguem com a ordem padrão */
+}
 
 const globalForDb = globalThis as unknown as { __albumPool?: Pool };
 
