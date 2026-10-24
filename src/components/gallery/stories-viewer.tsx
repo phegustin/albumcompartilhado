@@ -108,12 +108,45 @@ export function StoriesViewer({
   const timerPausaRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const arrastouRef = useRef(false);
 
+  /**
+   * Dedos na tela agora.
+   *
+   * Existe por causa da pinça (zoom): quando dois dedos tocam, NÃO é um toque
+   * para avançar nem um toque para pausar — é a pessoa abrindo zoom na foto.
+   * Sem esse controle, o segundo dedo valia como "toque na direita" e a foto
+   * pulava para a próxima justamente quando a pessoa queria examinar aquela.
+   */
+  const dedosRef = useRef(new Set<number>());
+  const ignorarToqueRef = useRef(false);
+
+  /**
+   * A pausa foi pedida de propósito (botão ou pinça) e não só "dedo
+   * segurando"?
+   *
+   * Faz diferença na hora de soltar: se a pessoa pausou de propósito, um
+   * toque simples RETOMA. Se ela só estava segurando, soltar já retoma
+   * sozinho. Sem essa distinção, a pessoa dava zoom, tocava para sair do
+   * zoom e a foto pulava para a próxima.
+   */
+  const pausaManualRef = useRef(false);
+
+  /** Limpa qualquer interação em andamento (sem despausar). */
+  const cancelarInteracao = useCallback(() => {
+    if (timerPausaRef.current) {
+      clearTimeout(timerPausaRef.current);
+      timerPausaRef.current = null;
+    }
+    toqueRef.current = null;
+    setArrastando(false);
+  }, []);
+
   const atual = midias[indice];
   const tipo = atual?.mediaType;
 
-  const pausar = useCallback((valor: boolean) => {
+  const pausar = useCallback((valor: boolean, manual = false) => {
     pausadoRef.current = valor;
     setPausado(valor);
+    pausaManualRef.current = manual ? valor : false;
 
     // Pausar a barra sem pausar o vídeo deixaria os dois fora de sintonia:
     // a barra pararia e o vídeo continuaria rodando. Então vale para os dois.
@@ -211,6 +244,20 @@ export function StoriesViewer({
   /* ---------------- toque / arraste ---------------- */
 
   const aoPressionar = (e: React.PointerEvent) => {
+    dedosRef.current.add(e.pointerId);
+
+    // Segundo dedo na tela: é pinça. Sai da frente e deixa o navegador
+    // fazer o zoom.
+    if (dedosRef.current.size > 1) {
+      ignorarToqueRef.current = true;
+      cancelarInteracao();
+      // E pausa: quem abre zoom quer olhar a foto, não que ela passe.
+      // Sem isso, dava zoom e a foto continuava correndo embaixo.
+      pausar(true, true);
+      return;
+    }
+
+    ignorarToqueRef.current = false;
     toqueRef.current = { x: e.clientX, y: e.clientY, tempo: Date.now() };
     arrastouRef.current = false;
     setArrastando(true);
@@ -218,6 +265,7 @@ export function StoriesViewer({
   };
 
   const aoMover = (e: React.PointerEvent) => {
+    if (ignorarToqueRef.current) return;
     const inicio = toqueRef.current;
     if (!inicio) return;
     const dx = e.clientX - inicio.x;
@@ -232,6 +280,15 @@ export function StoriesViewer({
   };
 
   const aoSoltar = (e: React.PointerEvent) => {
+    dedosRef.current.delete(e.pointerId);
+
+    if (ignorarToqueRef.current) {
+      // Só volta a aceitar toque quando o último dedo sair da tela.
+      // Nem avança, nem despausa — a pessoa estava dando zoom.
+      if (dedosRef.current.size === 0) ignorarToqueRef.current = false;
+      return;
+    }
+
     if (timerPausaRef.current) {
       clearTimeout(timerPausaRef.current);
       timerPausaRef.current = null;
@@ -240,6 +297,13 @@ export function StoriesViewer({
     toqueRef.current = null;
     setArrastando(false);
     if (!inicio) return;
+
+    // Pausou de propósito (botão ou zoom): toque simples retoma.
+    // Se não fizesse isso, dar zoom e tocar para sair pulava a foto.
+    if (pausaManualRef.current && !arrastouRef.current && Math.abs(e.clientX - inicio.x) <= LIMIAR_ARRASTO) {
+      pausar(false);
+      return;
+    }
 
     const dx = e.clientX - inicio.x;
 
@@ -318,13 +382,35 @@ export function StoriesViewer({
         </button>
       </div>
 
-      {/* zona de toque: esquerda volta, direita avança */}
+      {/*
+        Zona de toque: esquerda volta, direita avança.
+
+        Duas defesas contra o comportamento padrão do navegador:
+
+        1) onContextMenu + `-webkit-touch-callout: none`
+           Sem isso, segurar o dedo abre o menu do navegador ("Salvar
+           imagem", "Copiar link") em vez de pausar — era impossível pausar
+           para olhar a foto com calma.
+
+        2) `touch-action: pan-y pinch-zoom`
+           Devolve a pinça para o navegador (sem isso o zoom não abre), e
+           ao mesmo tempo libera o arraste HORIZONTAL para a gente
+           controlar. Se fosse só `pinch-zoom`, o gesto de arrastar para
+           passar a foto deixaria de funcionar.
+           Junto com a checagem de múltiplos dedos acima, dá para abrir
+           zoom sem que a foto pule para a próxima.
+      */}
       <div
-        className="absolute inset-0 z-10 touch-pan-y"
+        className="absolute inset-0 z-10"
+        style={{
+          touchAction: "pan-y pinch-zoom",
+          WebkitTouchCallout: "none",
+        }}
         onPointerDown={aoPressionar}
         onPointerMove={aoMover}
         onPointerUp={aoSoltar}
         onPointerCancel={aoSoltar}
+        onContextMenu={(e) => e.preventDefault()}
       >
         {tipo === "PHOTO" && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -403,7 +489,7 @@ export function StoriesViewer({
           </button>
 
           <button
-            onClick={() => pausar(!pausado)}
+            onClick={() => pausar(!pausado, true)}
             className="rounded-full bg-white/15 p-2.5 text-white backdrop-blur active:bg-white/25"
             aria-label={pausado ? "Retomar" : "Pausar"}
           >
@@ -416,7 +502,8 @@ export function StoriesViewer({
         </div>
 
         <p className="mt-4 text-center text-[11px] text-white/40">
-          Toque na direita para avançar · segure para pausar
+          Toque na direita para avançar · segure para pausar · belisque para
+          dar zoom
         </p>
       </div>
     </motion.div>
