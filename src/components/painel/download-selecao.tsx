@@ -28,7 +28,15 @@ export type MidiaParaDownload = {
   originalUrl: string;
   uploaderName: string;
   mediaType: "PHOTO" | "VIDEO" | "AUDIO";
-  categoryTag: "MAKING_OF" | "CERIMONIA" | "RECEPCAO" | "PISTA" | "RECADOS";
+  categoryTag:
+    | "MAKING_OF"
+    | "CERIMONIA"
+    | "RECEPCAO"
+    | "PISTA"
+    | "RECADOS"
+    | "OUTROS";
+  /** Preenchido quando categoryTag = "OUTROS" (ex.: "valsa", "banquete"). */
+  categoryCustom: string | null;
   caption: string | null;
 };
 
@@ -39,6 +47,7 @@ const PASTAS: Record<MidiaParaDownload["categoryTag"], string> = {
   RECEPCAO: "03-Recepcao",
   PISTA: "04-Pista",
   RECADOS: "05-Recados-de-Voz",
+  OUTROS: "06-Outros",
 };
 
 const ROTULO_MOMENTO: Record<MidiaParaDownload["categoryTag"], string> = {
@@ -47,7 +56,32 @@ const ROTULO_MOMENTO: Record<MidiaParaDownload["categoryTag"], string> = {
   RECEPCAO: "Recepção",
   PISTA: "Pista",
   RECADOS: "Recados",
+  OUTROS: "Outros",
 };
+
+/**
+ * Cada momento escrito pelos convidados ("valsa", "drinks") vira um grupo
+ * próprio — com pasta própria no ZIP. Se a gente misturasse tudo numa pasta
+ * "Outros", o download perderia justamente a organização que é o objetivo.
+ */
+function chaveMomento(m: MidiaParaDownload): string {
+  return m.categoryTag === "OUTROS"
+    ? `OUTROS:${(m.categoryCustom || "Outros").trim().toLowerCase()}`
+    : m.categoryTag;
+}
+
+function rotuloMomento(chave: string, exemplo: MidiaParaDownload): string {
+  if (chave.startsWith("OUTROS:")) return (exemplo.categoryCustom || "Outros").trim();
+  return ROTULO_MOMENTO[exemplo.categoryTag] ?? "Outros";
+}
+
+function pastaMomento(m: MidiaParaDownload): string {
+  if (m.categoryTag === "OUTROS") {
+    const nome = limparNome(m.categoryCustom || "Outros") || "outros";
+    return `06-Outros/${nome}`;
+  }
+  return PASTAS[m.categoryTag];
+}
 
 const EXTENSAO: Record<MidiaParaDownload["mediaType"], string> = {
   PHOTO: "jpg",
@@ -89,11 +123,12 @@ export function DownloadSelecao({
 
   /** Agrupa por momento para os botões "baixar só a cerimônia" etc. */
   const porMomento = useMemo(() => {
-    const mapa = new Map<MidiaParaDownload["categoryTag"], MidiaParaDownload[]>();
+    const mapa = new Map<string, MidiaParaDownload[]>();
     for (const m of midias) {
-      const lista = mapa.get(m.categoryTag) ?? [];
+      const chave = chaveMomento(m);
+      const lista = mapa.get(chave) ?? [];
       lista.push(m);
-      mapa.set(m.categoryTag, lista);
+      mapa.set(chave, lista);
     }
     return Array.from(mapa.entries());
   }, [midias]);
@@ -115,8 +150,8 @@ export function DownloadSelecao({
     setSelecionadas(new Set());
   }
 
-  function selecionarMomento(tag: MidiaParaDownload["categoryTag"]) {
-    const doMomento = midias.filter((m) => m.categoryTag === tag);
+  function selecionarMomento(chave: string) {
+    const doMomento = midias.filter((m) => chaveMomento(m) === chave);
     const todasMarcadas = doMomento.every((m) => selecionadas.has(m.id));
     setSelecionadas((antes) => {
       const novo = new Set(antes);
@@ -148,7 +183,7 @@ export function DownloadSelecao({
           if (!resposta.ok) throw new Error(`HTTP ${resposta.status}`);
           const blob = await resposta.blob();
 
-          const pasta = PASTAS[m.categoryTag];
+          const pasta = pastaMomento(m);
           const base = `${limparNome(m.uploaderName) || "convidado"}-${m.id.slice(0, 8)}`;
           const nome = `${base}.${EXTENSAO[m.mediaType]}`;
           const chave = `${pasta}/${nome}`;
@@ -203,16 +238,16 @@ export function DownloadSelecao({
     <div className="space-y-4">
       {/* ---------------- Atalhos por momento ---------------- */}
       <div className="flex flex-wrap gap-2">
-        {porMomento.map(([tag, lista]) => {
+        {porMomento.map(([chave, lista]) => {
           const marcadas = lista.filter((m) => selecionadas.has(m.id)).length;
           return (
             <button
-              key={tag}
+              key={chave}
               type="button"
-              onClick={() => selecionarMomento(tag)}
+              onClick={() => selecionarMomento(chave)}
               className="rounded-full border border-album-border px-3 py-1.5 text-xs text-album-muted transition-colors hover:border-album-accent hover:text-album-text"
             >
-              {ROTULO_MOMENTO[tag]} ({lista.length})
+              {rotuloMomento(chave, lista[0])} ({lista.length})
               {marcadas > 0 && (
                 <span className="ml-1 font-semibold text-album-accent">
                   · {marcadas}

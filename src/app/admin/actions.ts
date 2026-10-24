@@ -162,6 +162,9 @@ export async function editarAlbum(formData: FormData) {
           | "MIDNIGHT_PARTY",
         studioBrandName: String(formData.get("studioBrandName") ?? "").trim() || null,
         studioWhatsapp: String(formData.get("studioWhatsapp") ?? "").trim() || null,
+        // Só entra na vitrine / se estiver marcado. Evento de cliente real
+        // fica invisível na home (o padrão é false).
+        showcase: formData.get("showcase") === "on",
         updatedAt: new Date(),
       })
       .where(eq(albums.id, id))
@@ -256,6 +259,7 @@ export async function criarAlbum(formData: FormData) {
       moderatorPin: gerarPin(),
       studioBrandName: String(formData.get("studioBrandName") ?? "").trim() || null,
       studioWhatsapp: String(formData.get("studioWhatsapp") ?? "").trim() || null,
+      showcase: formData.get("showcase") === "on",
     });
   } catch (e) {
     // Antes isso morria calado e o botão parecia não funcionar.

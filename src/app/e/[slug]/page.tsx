@@ -41,6 +41,7 @@ export default async function EventoPage({
     uploaderName: m.uploaderName,
     mediaType: m.mediaType,
     categoryTag: m.categoryTag,
+    categoryCustom: m.categoryCustom,
     originalUrl: m.originalUrl,
     thumbUrl: m.thumbUrl,
     caption: m.caption,

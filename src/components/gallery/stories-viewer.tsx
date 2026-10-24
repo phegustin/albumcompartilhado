@@ -33,6 +33,7 @@ export type MidiaStory = {
   uploaderName: string;
   mediaType: "PHOTO" | "VIDEO" | "AUDIO";
   categoryTag: string;
+  categoryCustom: string | null;
   originalUrl: string;
   thumbUrl: string | null;
   caption: string | null;
@@ -302,8 +303,10 @@ export function StoriesViewer({
             {atual.uploaderName}
           </p>
           <p className="truncate text-xs text-white/60">
-            {ROTULO_CATEGORIA[atual.categoryTag] ?? "Momento"} ·{" "}
-            {tempoRelativo(atual.createdAt)}
+            {atual.categoryTag === "OUTROS"
+              ? atual.categoryCustom || "Outros"
+              : (ROTULO_CATEGORIA[atual.categoryTag] ?? "Momento")}{" "}
+            · {tempoRelativo(atual.createdAt)}
           </p>
         </div>
         <button

@@ -23,7 +23,11 @@ export type CategoriaEnvio =
   | "CERIMONIA"
   | "RECEPCAO"
   | "PISTA"
-  | "RECADOS";
+  | "RECADOS"
+  // "Outros": a pessoa escreve o momento. Existe porque a lista fixa nunca
+  // vai cobrir tudo — valsa, banquete e drinks são exemplos reais que não
+  // cabiam. Em vez de inflar o enum com dezenas de opções, deixamos escrever.
+  | "OUTROS";
 
 const CATEGORIAS: { valor: CategoriaEnvio; rotulo: string }[] = [
   { valor: "MAKING_OF", rotulo: "Pré-Festa" },
@@ -31,6 +35,26 @@ const CATEGORIAS: { valor: CategoriaEnvio; rotulo: string }[] = [
   { valor: "RECEPCAO", rotulo: "Recepção" },
   { valor: "PISTA", rotulo: "Pista" },
   { valor: "RECADOS", rotulo: "Recados" },
+  { valor: "OUTROS", rotulo: "Outros" },
+];
+
+/**
+ * Sugestões que aparecem para quem escolhe "Outros".
+ *
+ * São momentos que aparecem em praticamente toda festa e que a lista fixa
+ * não cobre. Servem de atalho: a pessoa clica em vez de digitar — mas pode
+ * escrever qualquer coisa diferente, e o que ela escrever passa a ser
+ * sugerido para os próximos convidados do mesmo evento.
+ */
+const MOMENTOS_SUGERIDOS = [
+  "Valsa",
+  "Banquete",
+  "Drinks",
+  "Hora do bolo",
+  "Mesa de doces",
+  "Saída da noiva",
+  "Família",
+  "Amigos",
 ];
 
 type ItemFila = {
@@ -78,6 +102,7 @@ export function UploadSheet({
   guestName,
   deviceId,
   categoriaInicial = "RECEPCAO",
+  momentosUsados = [],
   onFechar,
   onConcluido,
 }: {
@@ -85,13 +110,32 @@ export function UploadSheet({
   guestName: string;
   deviceId: string;
   categoriaInicial?: CategoriaEnvio;
+  /** Momentos que outros convidados já escreveram neste evento. */
+  momentosUsados?: string[];
   onFechar: () => void;
   onConcluido: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [fila, setFila] = useState<ItemFila[]>([]);
   const [categoria, setCategoria] = useState<CategoriaEnvio>(categoriaInicial);
+  const [momentoLivre, setMomentoLivre] = useState("");
   const [legenda, setLegenda] = useState("");
+
+  /**
+   * Sugestões = as que já vêm prontas + as que os convidados deste evento
+   * já escreveram. Sem repetir e sem diferença de maiúscula/minúscula.
+   */
+  const sugestoes = Array.from(
+    new Set(
+      [...momentosUsados, ...MOMENTOS_SUGERIDOS].map((m) => m.trim()).filter(Boolean),
+    ),
+  ).filter(
+    (m, i, todos) =>
+      todos.findIndex((o) => o.toLowerCase() === m.toLowerCase()) === i,
+  );
+
+  const momentoFinal =
+    categoria === "OUTROS" ? momentoLivre.trim() || null : null;
   const [ocupado, setOcupado] = useState(false);
 
   function atualizar(id: string, mudanca: Partial<ItemFila>) {
@@ -172,6 +216,7 @@ export function UploadSheet({
           uploaderDeviceId: deviceId,
           mediaType: tipo,
           categoryTag: categoria,
+          categoryCustom: momentoFinal,
           originalPath: original.path,
           originalUrl: original.publicUrl,
           thumbUrl,
@@ -236,7 +281,7 @@ export function UploadSheet({
         <p className="mb-2 text-[11px] font-medium tracking-[0.18em] text-album-muted uppercase">
           Momento
         </p>
-        <div className="mb-5 flex flex-wrap gap-2">
+        <div className="mb-3 flex flex-wrap gap-2">
           {CATEGORIAS.map((c) => {
             const ativo = categoria === c.valor;
             return (
@@ -257,6 +302,45 @@ export function UploadSheet({
             );
           })}
         </div>
+
+        {/*
+          "Outros": a pessoa escreve o momento com as próprias palavras.
+          As sugestões abaixo são atalhos — clicar preenche o campo, mas ela
+          pode apagar e escrever qualquer coisa. O que ela escrever fica
+          salvo e passa a ser sugerido para os próximos convidados.
+        */}
+        {categoria === "OUTROS" && (
+          <div className="mb-5 rounded-2xl bg-album-bg p-3.5">
+            <input
+              value={momentoLivre}
+              onChange={(e) => setMomentoLivre(e.target.value)}
+              placeholder="Qual momento? Ex.: valsa, banquete, drinks"
+              maxLength={40}
+              className="w-full rounded-xl bg-album-surface px-4 py-2.5 text-sm text-album-text placeholder:text-album-muted focus:ring-2 focus:ring-album-accent focus:outline-none"
+            />
+
+            {sugestoes.length > 0 && (
+              <>
+                <p className="mt-3 mb-1.5 text-[11px] text-album-muted">
+                  Toque para usar:
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {sugestoes.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setMomentoLivre(s)}
+                      className="rounded-full px-3 py-1.5 text-[12px] font-medium text-album-text transition-colors"
+                      style={{ boxShadow: "inset 0 0 0 1px var(--album-border)" }}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         <input
           value={legenda}

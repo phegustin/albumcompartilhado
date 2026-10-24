@@ -33,7 +33,19 @@ import { caminhoSecreto } from "@/lib/admin-auth";
  */
 export const dynamic = "force-dynamic";
 export default async function Home() {
-  const eventos = await db.select().from(albums).orderBy(desc(albums.createdAt));
+  /**
+   * Só entra na vitrine quem está explicitamente marcado como showcase.
+   *
+   * Antes isso listava TODOS os álbuns do banco. Como a vitrine mostra o
+   * link do painel de cada evento, um cliente que chegasse aqui via o evento
+   * de todos os outros clientes. Agora o padrão é não aparecer: só eventos
+   * de demonstração são marcados.
+   */
+  const eventos = await db
+    .select()
+    .from(albums)
+    .where(eq(albums.showcase, true))
+    .orderBy(desc(albums.createdAt));
 
   const contagens = await db
     .select({

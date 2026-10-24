@@ -302,6 +302,7 @@ export default async function PainelPage({
               uploaderName: m.uploaderName,
               mediaType: m.mediaType,
               categoryTag: m.categoryTag,
+              categoryCustom: m.categoryCustom,
               caption: m.caption,
             }))}
           />

@@ -10,6 +10,7 @@
  * Então: se existe histórico dentro do app -> volta de verdade.
  *         se não existe                    -> vai pro `destino` seguro.
  */
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
@@ -21,8 +22,15 @@ export function BackButton({
   variante = "sobre-pagina",
   className = "",
 }: {
-  /** Para onde ir quando não existe histórico pra voltar. */
-  destino: string;
+  /**
+   * Para onde ir quando não existe histórico pra voltar.
+   *
+   * Opcional de propósito. Se a pessoa chegou direto (escaneou o QR) e não
+   * existe histórico nem destino seguro, não sobra para onde ir — o botão
+   * simplesmente não aparece. Antes ele apontava para "/" (a vitrine), e a
+   * vitrine listava os eventos de TODOS os outros clientes.
+   */
+  destino?: string;
   /** Se vier, o botão fica em formato de pílula com texto. */
   rotulo?: string;
   /** "sobre-imagem" = ícone branco sobre fundo escuro (usado em cima de foto). */
@@ -31,10 +39,23 @@ export function BackButton({
 }) {
   const router = useRouter();
 
+  /**
+   * Só sabemos se existe histórico DEPOIS que a página carrega no navegador.
+   * Antes disso assumimos que não existe, para nunca prometer um botão que
+   * não leva a lugar nenhum.
+   */
+  const [temHistorico, setTemHistorico] = useState(false);
+  useEffect(() => {
+    setTemHistorico(window.history.length > 1);
+  }, []);
+
+  // Sem histórico e sem destino: não sobra para onde voltar.
+  if (!temHistorico && !destino) return null;
+
   function voltar() {
-    if (typeof window !== "undefined" && window.history.length > 1) {
+    if (temHistorico) {
       router.back();
-    } else {
+    } else if (destino) {
       router.push(destino);
     }
   }

@@ -244,6 +244,21 @@ export default async function AdminPage({
               placeholder="WhatsApp (com DDD)"
               className="rounded-xl border border-album-border bg-album-bg px-4 py-2.5 text-sm text-album-text placeholder:text-album-muted focus:border-album-accent focus:outline-none"
             />
+            <label className="flex items-start gap-2.5 rounded-xl border border-album-border bg-album-bg px-4 py-3 sm:col-span-2">
+              <input
+                type="checkbox"
+                name="showcase"
+                className="mt-0.5 size-4 shrink-0 accent-album-accent"
+              />
+              <span className="text-sm text-album-text">
+                Mostrar na vitrine (/)
+                <span className="mt-0.5 block text-xs text-album-muted">
+                  Só marque para eventos de demonstração. A vitrine é pública e
+                  lista o link do painel de cada evento — um cliente não deve
+                  ver o evento de outro.
+                </span>
+              </span>
+            </label>
             <button
               type="submit"
               className="rounded-xl bg-album-primary px-4 py-2.5 text-sm font-semibold text-album-on-primary"
@@ -375,6 +390,23 @@ export default async function AdminPage({
                     placeholder="WhatsApp (com DDD)"
                     className="rounded-xl border border-album-border bg-album-bg px-4 py-2.5 text-sm text-album-text placeholder:text-album-muted focus:border-album-accent focus:outline-none"
                   />
+
+                  <label className="flex items-start gap-2.5 rounded-xl border border-album-border bg-album-bg px-4 py-3 sm:col-span-2">
+                    <input
+                      type="checkbox"
+                      name="showcase"
+                      defaultChecked={evento.showcase}
+                      className="mt-0.5 size-4 shrink-0 accent-album-accent"
+                    />
+                    <span className="text-sm text-album-text">
+                      Mostrar na vitrine (/)
+                      <span className="mt-0.5 block text-xs text-album-muted">
+                        Só marque para eventos de demonstração. A vitrine é
+                        pública e lista o link do painel de cada evento — um
+                        cliente não deve ver o evento de outro.
+                      </span>
+                    </span>
+                  </label>
 
                   <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
                     <button

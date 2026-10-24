@@ -19,7 +19,15 @@ export async function POST(request: Request) {
     uploaderName?: string;
     uploaderDeviceId?: string;
     mediaType?: "PHOTO" | "VIDEO" | "AUDIO";
-    categoryTag?: "MAKING_OF" | "CERIMONIA" | "RECEPCAO" | "PISTA" | "RECADOS";
+    categoryTag?:
+      | "MAKING_OF"
+      | "CERIMONIA"
+      | "RECEPCAO"
+      | "PISTA"
+      | "RECADOS"
+      | "OUTROS";
+    /** Texto livre do momento, quando categoryTag = "OUTROS". */
+    categoryCustom?: string;
     originalPath?: string;
     originalUrl?: string;
     thumbUrl?: string;
@@ -55,6 +63,12 @@ export async function POST(request: Request) {
       uploaderDeviceId: corpo.uploaderDeviceId ?? null,
       mediaType: corpo.mediaType ?? "PHOTO",
       categoryTag: corpo.categoryTag ?? "RECEPCAO",
+      // Só grava o texto livre se a categoria for realmente OUTROS — senão
+      // fica lixo no banco (ex.: categoria "PISTA" com texto "valsa").
+      categoryCustom:
+        corpo.categoryTag === "OUTROS"
+          ? corpo.categoryCustom?.trim().slice(0, 60) || null
+          : null,
       originalPath: corpo.originalPath ?? null,
       originalUrl,
       thumbUrl: corpo.thumbUrl ?? null,
