@@ -4,6 +4,7 @@ import QRCode from "qrcode";
 
 import { db } from "@/db";
 import { albums, mediaItems } from "@/db/schema";
+import { getBaseUrl } from "@/lib/base-url";
 import { TelaoView } from "@/components/telao/telao-view";
 
 /**
@@ -27,7 +28,9 @@ export default async function TelaoPage({
 
   if (!album) notFound();
 
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  // Deriva da própria requisição: assim o QR aponta para o endereço que a
+  // pessoa está usando, seja localhost, preview ou domínio de produção.
+  const base = await getBaseUrl();
   const qrCodeDataUrl = await QRCode.toDataURL(`${base}/e/${slug}`, {
     width: 600,
     margin: 1,

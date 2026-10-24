@@ -5,6 +5,7 @@ import { ExternalLink, LogOut, Tv, QrCode, ShieldCheck, Crown } from "lucide-rea
 
 import { db } from "@/db";
 import { albums, mediaItems } from "@/db/schema";
+import { getBaseUrl } from "@/lib/base-url";
 import { themeStyle } from "@/lib/themes";
 import { criarAlbum, entrarAdmin, sairAdmin } from "./actions";
 
@@ -84,7 +85,7 @@ export default async function AdminPage({
     .groupBy(mediaItems.albumId);
 
   const totalPorAlbum = new Map(contagens.map((c) => [c.albumId, c.total]));
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  const base = await getBaseUrl();
 
   return (
     <main className="min-h-dvh p-6" style={themeStyle("CLASSIC_NOIR")}>

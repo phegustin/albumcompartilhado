@@ -5,6 +5,7 @@ import { Crown, Download, Tv, ShieldCheck, QrCode as QrIcon } from "lucide-react
 
 import { db } from "@/db";
 import { albums, mediaItems } from "@/db/schema";
+import { getBaseUrl } from "@/lib/base-url";
 import { themeStyle } from "@/lib/themes";
 import { salvarConfiguracoes } from "./actions";
 
@@ -74,7 +75,7 @@ export default async function PainelPage({
     AUDIO: midias.filter((m) => m.mediaType === "AUDIO").length,
   };
 
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const base = await getBaseUrl();
   const qrPlaquinha = await QRCode.toDataURL(`${base}/e/${slug}`, {
     width: 800,
     margin: 2,
