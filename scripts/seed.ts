@@ -6,8 +6,8 @@
  * O script é IDEMPOTENTE: pode rodar quantas vezes quiser, ele sempre
  * recria o álbum de demo do zero (apaga só o que é dele).
  *
- * As imagens originais ficam em seed-assets/ (fora do Git). O envio passa
- * pelo mesmo adapter de storage do app:
+ * As imagens originais ficam em seed-assets/ (versionadas no Git). O envio
+ * passa pelo mesmo adapter de storage do app:
  *   - driver local    -> copia para public/uploads/ e serve por /api/media/
  *   - driver supabase -> envia para o bucket e usa a URL pública
  */
@@ -20,7 +20,8 @@ import { config } from "dotenv";
 config({ path: ".env" });
 
 import { albums, mediaItems, mediaLikes, mediaComments } from "../src/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq, like } from "drizzle-orm";
+import { getDriver } from "../src/lib/storage";
 
 /*
  * O `db` é carregado DENTRO do main() de propósito.
@@ -127,28 +128,54 @@ async function main() {
     );
   }
 
-  console.log("→ limpando demo anterior (se existir)");
-  // ON DELETE cascade cuida de mídias, curtidas e comentários.
-  await db.delete(albums).where(eq(albums.slug, SLUG));
+  const [existente] = await db
+    .select({ id: albums.id })
+    .from(albums)
+    .where(eq(albums.slug, SLUG));
 
-  console.log("→ criando o álbum Helena & Gabriel");
-  const [album] = await db
-    .insert(albums)
-    .values({
-      slug: SLUG,
-      eventType: "WEDDING",
-      title: "Helena & Gabriel",
-      subtitle: "Casamento • 15 de Novembro",
-      eventDate: new Date(),
-      theme: "OLIVE_GOLD",
-      capsuleMode: false,
-      requireModeration: false,
-      hostPin: "1234",
-      moderatorPin: "4321",
-      studioBrandName: "Estúdio Memórias",
-      studioWhatsapp: "5593999999999",
-    })
-    .returning();
+  /*
+   * Importante: NÃO apagamos o álbum inteiro.
+   * Só as mídias cujo deviceId começa com "demo-" — ou seja, as que este
+   * script criou. As fotos que alguém mandou de verdade pelo celular ficam
+   * intactas. Isso torna o seed seguro de rodar em todo deploy.
+   */
+  let albumId: string;
+
+  if (existente) {
+    albumId = existente.id;
+    const apagadas = await db
+      .delete(mediaItems)
+      .where(
+        and(
+          eq(mediaItems.albumId, albumId),
+          like(mediaItems.uploaderDeviceId, "demo-%"),
+        ),
+      )
+      .returning({ id: mediaItems.id });
+    console.log(
+      `→ álbum demo já existe: mantendo, repondo ${apagadas.length} foto(s) de demonstração`,
+    );
+  } else {
+    console.log("→ criando o álbum Helena & Gabriel");
+    const [album] = await db
+      .insert(albums)
+      .values({
+        slug: SLUG,
+        eventType: "WEDDING",
+        title: "Helena & Gabriel",
+        subtitle: "Casamento • 15 de Novembro",
+        eventDate: new Date(),
+        theme: "OLIVE_GOLD",
+        capsuleMode: false,
+        requireModeration: false,
+        hostPin: "1234",
+        moderatorPin: "4321",
+        studioBrandName: "Estúdio Memórias",
+        studioWhatsapp: "5593999999999",
+      })
+      .returning();
+    albumId = album.id;
+  }
 
   const arquivosDisponiveis = await readdir(ASSETS_DIR);
   let enviadas = 0;
@@ -174,7 +201,7 @@ async function main() {
     const [item] = await db
       .insert(mediaItems)
       .values({
-        albumId: album.id,
+        albumId,
         uploaderName: foto.autor,
         uploaderDeviceId: `demo-${foto.autor.toLowerCase().replace(/\s+/g, "-")}`,
         mediaType: "PHOTO",
@@ -216,14 +243,14 @@ async function main() {
   const [capa] = await db
     .select({ thumbUrl: mediaItems.thumbUrl, originalUrl: mediaItems.originalUrl })
     .from(mediaItems)
-    .where(eq(mediaItems.albumId, album.id))
+    .where(eq(mediaItems.albumId, albumId))
     .limit(1);
 
   if (capa) {
     await db
       .update(albums)
       .set({ coverUrl: capa.thumbUrl ?? capa.originalUrl })
-      .where(eq(albums.id, album.id));
+      .where(eq(albums.id, albumId));
   }
 
   console.log(`\n✓ Seed concluído: ${enviadas} mídias no álbum /e/${SLUG}`);
