@@ -4,7 +4,6 @@ import { desc, sql } from "drizzle-orm";
 import {
   ChevronDown,
   Crown,
-  ExternalLink,
   LogOut,
   PencilLine,
   QrCode,
@@ -17,6 +16,7 @@ import { albums, mediaItems } from "@/db/schema";
 import { getBaseUrl } from "@/lib/base-url";
 import { themeStyle } from "@/lib/themes";
 import { BackButton } from "@/components/ui/back-button";
+import { LinkEvento } from "@/components/admin/link-evento";
 import { COOKIE_ADMIN, tokenValido } from "@/lib/admin-auth";
 import { ExcluirEvento } from "@/components/admin/excluir-evento";
 import {
@@ -321,12 +321,7 @@ export default async function AdminPage({
                 </Link>
               </div>
 
-              {base && (
-                <p className="mt-3 flex items-center gap-1 text-[11px] text-album-muted">
-                  <ExternalLink className="size-3" />
-                  {base}/e/{evento.slug}
-                </p>
-              )}
+              {base && <LinkEvento url={`${base}/e/${evento.slug}`} />}
 
               {/* -------- Editar / excluir (só o criador vê) -------- */}
               <details className="group mt-4 border-t border-album-border pt-4">
