@@ -29,6 +29,8 @@ export type MidiaGaleria = {
   uploaderName: string;
   mediaType: "PHOTO" | "VIDEO" | "AUDIO";
   categoryTag: CategoriaEnvio;
+  /** Texto livre do momento quando categoryTag = "OUTROS". */
+  categoryCustom: string | null;
   originalUrl: string;
   thumbUrl: string | null;
   caption: string | null;
@@ -123,6 +125,20 @@ export function GuestView({
    */
   const [storyIndex, setStoryIndex] = useState<number | null>(null);
   const [curtidas, setCurtidas] = useState<Record<string, boolean>>({});
+
+  /**
+   * Total de curtidas MOSTRADO NA TELA.
+   *
+   * Antes o número vinha direto do servidor e só mudava quando o
+   * router.refresh() respondia — no celular isso levava segundos.
+   *
+   * Agora: enquanto ninguém tocou, mostramos o valor do servidor
+   * (totais[id] indefinido). No primeiro toque, passamos a mostrar um valor
+   * local exato (likesCount ± 1), que muda NA HORA. Usar "valor local"
+   * em vez de "likesCount + 1" evita somar duas vezes quando o servidor
+   * finalmente responde com o número já atualizado.
+   */
+  const [totais, setTotais] = useState<Record<string, number>>({});
 
   /**
    * O botão de voltar flutua sobre a capa (foto escura -> ícone branco).
@@ -224,13 +240,32 @@ export function GuestView({
     if (!deviceId) return;
     const jaCurtiu = curtidas[midia.id] ?? false;
 
+    // Os dois acontecem ANTES de qualquer ida ao servidor: a pessoa vê
+    // o coração encher e o número mudar no mesmo instante do toque.
     setCurtidas((atual) => ({ ...atual, [midia.id]: !jaCurtiu }));
+    setTotais((atual) => ({
+      ...atual,
+      [midia.id]: (atual[midia.id] ?? midia.likesCount) + (jaCurtiu ? -1 : 1),
+    }));
 
     startTransition(async () => {
       await alternarCurtida(midia.id, deviceId);
       router.refresh();
     });
   }
+
+  /**
+   * Momentos que os convidados já escreveram neste evento.
+   * Viram sugestões para quem escolher "Outros" — assim "valsa" é digitada
+   * uma vez e clicada nas próximas.
+   */
+  const momentosUsados = useMemo(
+    () =>
+      midias
+        .map((m) => (m.categoryTag === "OUTROS" ? m.categoryCustom : null))
+        .filter((v): v is string => Boolean(v && v.trim())),
+    [midias],
+  );
 
   /* ---------------------------------------------------------------------- */
   /* Render                                                                  */
@@ -248,8 +283,13 @@ export function GuestView({
         style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.875rem)" }}
       >
         <div className="pointer-events-auto">
+          {/*
+           * Sem destino de propósito. Se a pessoa chegou pelo QR e não
+           * existe histórico, não há para onde voltar dentro do evento —
+           * antes o fallback mandava para "/", que listava os eventos de
+           * todos os outros clientes.
+           */}
           <BackButton
-            destino="/"
             variante={passouDaCapa ? "sobre-pagina" : "sobre-imagem"}
           />
         </div>
@@ -435,7 +475,9 @@ export function GuestView({
                       <Mic className="size-8 text-album-muted" />
                     )}
                     <span className="text-xs text-album-muted">
-                      {ROTULO_CATEGORIA[midia.categoryTag]}
+                      {midia.categoryTag === "OUTROS"
+                        ? (midia.categoryCustom ?? "Outros")
+                        : ROTULO_CATEGORIA[midia.categoryTag]}
                     </span>
                   </span>
                 )}
@@ -489,7 +531,7 @@ export function GuestView({
                         fill: curtidas[midia.id] ? "#fff" : "transparent",
                       }}
                     />
-                    {midia.likesCount}
+                    {totais[midia.id] ?? midia.likesCount}
                   </span>
                 </span>
               </button>
@@ -601,6 +643,7 @@ export function GuestView({
           slug={album.slug}
           guestName={nomeConvidado}
           deviceId={deviceId}
+          momentosUsados={momentosUsados}
           onFechar={() => setEnviando(false)}
           onConcluido={() => {
             router.refresh();
