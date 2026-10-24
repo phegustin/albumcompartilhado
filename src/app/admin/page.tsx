@@ -8,13 +8,36 @@ import { albums, mediaItems } from "@/db/schema";
 import { getBaseUrl } from "@/lib/base-url";
 import { themeStyle } from "@/lib/themes";
 import { BackButton } from "@/components/ui/back-button";
+import { COOKIE_ADMIN, tokenValido } from "@/lib/admin-auth";
 import { criarAlbum, entrarAdmin, sairAdmin } from "./actions";
 
 /**
- * Super Admin multi-eventos: /admin
+ * Mensagens amigáveis para cada código de erro.
+ *
+ * Antes só "senha-errada" e "senha-nao-configurada" tinham mensagem. Os
+ * outros códigos voltavam para a tela e ninguém via nada — era exatamente a
+ * sensação de "cliquei e não aconteceu nada".
+ */
+const MENSAGENS_ERRO: Record<string, string> = {
+  "senha-errada": "Senha incorreta.",
+  "senha-nao-configurada":
+    "A variável ADMIN_PASSWORD não está definida no servidor. Sem ela o painel não abre.",
+  "muitas-tentativas":
+    "Muitas tentativas erradas. Aguarde 15 minutos e tente de novo.",
+  "dados-invalidos":
+    "Preencha o título e um endereço válido (use letras e números, sem acento).",
+  "erro-ao-criar":
+    "Não foi possível criar o evento. Pode ser um endereço (slug) já usado — tente outro nome.",
+};
+
+/**
+ * Super Admin multi-eventos.
  *
  * Painel comercial: cria os eventos e copia os 4 links prontos para mandar
  * no WhatsApp do cliente.
+ *
+ * O endereço real é secreto (ADMIN_PATH). `/admin` só responde quando nenhum
+ * caminho secreto está configurado — ver src/middleware.ts.
  */
 export default async function AdminPage({
   searchParams,
@@ -23,7 +46,11 @@ export default async function AdminPage({
 }) {
   const { erro, criado } = await searchParams;
   const store = await cookies();
-  const autorizado = store.get("ac:admin")?.value === "1";
+  /*
+   * Antes isso era `=== "1"`, e o cookie era forjável por qualquer pessoa.
+   * Agora o valor é um token assinado com a própria senha do admin.
+   */
+  const autorizado = tokenValido(store.get(COOKIE_ADMIN)?.value);
   const senhaConfigurada = Boolean(process.env.ADMIN_PASSWORD);
 
   /* ------------------------------------------------------------------ */
@@ -50,9 +77,9 @@ export default async function AdminPage({
             </p>
           )}
 
-          {erro === "senha-errada" && (
+          {erro && (
             <p className="mt-5 rounded-xl border border-red-300 bg-red-50 px-3 py-2.5 text-xs text-red-700">
-              Senha incorreta.
+              {MENSAGENS_ERRO[erro] ?? "Não foi possível entrar. Tente de novo."}
             </p>
           )}
 
@@ -111,6 +138,12 @@ export default async function AdminPage({
             </button>
           </form>
         </div>
+
+        {erro && (
+          <p className="mt-5 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {MENSAGENS_ERRO[erro] ?? "Algo deu errado. Tente de novo."}
+          </p>
+        )}
 
         {criado && (
           <p className="mt-5 rounded-xl border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-800">

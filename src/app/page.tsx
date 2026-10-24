@@ -16,6 +16,7 @@ import {
 import { db } from "@/db";
 import { albums, mediaItems } from "@/db/schema";
 import { themeStyle } from "@/lib/themes";
+import { caminhoSecreto } from "@/lib/admin-auth";
 
 /**
  * Vitrine comercial (/).
@@ -205,16 +206,27 @@ export default async function Home() {
           </div>
         )}
 
-        <div className="mt-10 flex justify-center">
-          <Link
-            href="/admin"
-            className="inline-flex items-center gap-2 rounded-2xl bg-album-surface px-5 py-3.5 text-sm font-medium text-album-text shadow-sm"
-          >
-            <Settings className="size-4" />
-            Super Admin multi-eventos
-            <ArrowRight className="size-4" />
-          </Link>
-        </div>
+        {/*
+         * O atalho do Super Admin NÃO aparece na vitrine pública quando existe
+         * um endereço secreto configurado (ADMIN_PATH).
+         *
+         * Motivo: esta página é aberta por convidados do evento. Deixar aqui um
+         * botão "Super Admin" é como deixar a porta da gerência no meio do
+         * salão — mostra onde fica a fechadura para quem não tem nada a ver
+         * com isso. Em produção o painel é acessado só pelo endereço secreto.
+         */}
+        {!caminhoSecreto() && (
+          <div className="mt-10 flex justify-center">
+            <Link
+              href="/admin"
+              className="inline-flex items-center gap-2 rounded-2xl bg-album-surface px-5 py-3.5 text-sm font-medium text-album-text shadow-sm"
+            >
+              <Settings className="size-4" />
+              Super Admin multi-eventos
+              <ArrowRight className="size-4" />
+            </Link>
+          </div>
+        )}
       </section>
     </main>
   );
