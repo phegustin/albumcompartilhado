@@ -13,6 +13,8 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+
+import { urlAdmin } from "@/lib/admin-auth";
 import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
@@ -84,25 +86,25 @@ export async function entrarAdmin(formData: FormData) {
   const esperada = process.env.ADMIN_PASSWORD;
 
   if (!esperada) {
-    redirect("/admin?erro=senha-nao-configurada");
+    redirect(urlAdmin("?erro=senha-nao-configurada"));
   }
 
   const ip = await ipDoCliente();
 
   if (estaBloqueado(ip)) {
-    redirect("/admin?erro=muitas-tentativas");
+    redirect(urlAdmin("?erro=muitas-tentativas"));
   }
 
   if (!senhaCorreta(senha)) {
     registrarFalha(ip);
-    redirect("/admin?erro=senha-errada");
+    redirect(urlAdmin("?erro=senha-errada"));
   }
 
   limparTentativas(ip);
 
   const token = gerarToken();
   if (!token) {
-    redirect("/admin?erro=senha-nao-configurada");
+    redirect(urlAdmin("?erro=senha-nao-configurada"));
   }
 
   const store = await cookies();
@@ -114,13 +116,13 @@ export async function entrarAdmin(formData: FormData) {
     maxAge: 60 * 60 * 12,
   });
 
-  redirect("/admin?ok=1");
+  redirect(urlAdmin("?ok=1"));
 }
 
 export async function sairAdmin() {
   const store = await cookies();
   store.delete(COOKIE_ADMIN);
-  redirect("/admin");
+  redirect(urlAdmin(""));
 }
 
 /* -------------------------------------------------------------------------- */
@@ -133,7 +135,7 @@ export async function editarAlbum(formData: FormData) {
   const titulo = String(formData.get("titulo") ?? "").trim();
 
   if (!id || !titulo) {
-    redirect("/admin?erro=dados-invalidos");
+    redirect(urlAdmin("?erro=dados-invalidos"));
   }
 
   const tipoEvento = String(formData.get("eventType") ?? "WEDDING");
@@ -168,16 +170,16 @@ export async function editarAlbum(formData: FormData) {
     // id que nao existe nao e erro de servidor: e alguem mexendo em evento
     // que ja foi apagado.
     if (alterados.length === 0) {
-      redirect("/admin?erro=evento-nao-encontrado");
+      redirect(urlAdmin("?erro=evento-nao-encontrado"));
     }
   } catch (e) {
     console.error("[admin] falha ao editar evento:", e);
-    redirect("/admin?erro=erro-ao-editar");
+    redirect(urlAdmin("?erro=erro-ao-editar"));
   }
 
   revalidatePath("/admin");
   revalidatePath("/");
-  redirect("/admin?editado=1");
+  redirect(urlAdmin("?editado=1"));
 }
 
 /**
@@ -191,7 +193,7 @@ export async function excluirAlbum(formData: FormData) {
   const id = String(formData.get("id") ?? "");
 
   if (!id) {
-    redirect("/admin?erro=dados-invalidos");
+    redirect(urlAdmin("?erro=dados-invalidos"));
   }
 
   try {
@@ -201,15 +203,15 @@ export async function excluirAlbum(formData: FormData) {
       .returning({ slug: albums.slug });
 
     if (!apagado) {
-      redirect("/admin?erro=evento-nao-encontrado");
+      redirect(urlAdmin("?erro=evento-nao-encontrado"));
     }
 
     revalidatePath("/admin");
     revalidatePath("/");
-    redirect(`/admin?excluido=${encodeURIComponent(apagado.slug)}`);
+    redirect(urlAdmin(`?excluido=${encodeURIComponent(apagado.slug)}`));
   } catch (e) {
     console.error("[admin] falha ao excluir evento:", e);
-    redirect("/admin?erro=erro-ao-excluir");
+    redirect(urlAdmin("?erro=erro-ao-excluir"));
   }
 }
 
@@ -223,7 +225,7 @@ export async function criarAlbum(formData: FormData) {
   const slugBase = slugificar(String(formData.get("slug") ?? ""));
 
   if (!titulo || !slugBase) {
-    redirect("/admin?erro=dados-invalidos");
+    redirect(urlAdmin("?erro=dados-invalidos"));
   }
 
   const tipoEvento = String(formData.get("eventType") ?? "WEDDING");
@@ -258,10 +260,10 @@ export async function criarAlbum(formData: FormData) {
   } catch (e) {
     // Antes isso morria calado e o botão parecia não funcionar.
     console.error("[admin] falha ao criar evento:", e);
-    redirect("/admin?erro=erro-ao-criar");
+    redirect(urlAdmin("?erro=erro-ao-criar"));
   }
 
   revalidatePath("/admin");
   revalidatePath("/");
-  redirect(`/admin?criado=${encodeURIComponent(slug)}`);
+  redirect(urlAdmin(`?criado=${encodeURIComponent(slug)}`));
 }

@@ -120,3 +120,21 @@ export function caminhoSecreto(): string | null {
   const p = process.env.ADMIN_PATH?.trim();
   return p && p.length > 0 ? p.replace(/^\/+|\/+$/g, "") : null;
 }
+
+/**
+ * Endereço REAL do Super Admin, pronto para usar em redirect() e links.
+ *
+ * Quando ADMIN_PATH está definido, o painel só responde em /<ADMIN_PATH> e o
+ * middleware devolve 404 para /admin. Então qualquer redirect() que aponte
+ * para "/admin" manda o usuário para uma página de erro — foi exatamente o
+ * que aconteceu ao salvar a edição de um evento.
+ *
+ * Passe só o sufixo da querystring:
+ *   urlAdmin()            -> "/painel-admin"  (ou "/admin" sem ADMIN_PATH)
+ *   urlAdmin("?editado=1") -> "/painel-admin?editado=1"
+ */
+export function urlAdmin(sufixo = ""): string {
+  const segredo = caminhoSecreto();
+  const base = segredo ? `/${segredo}` : "/admin";
+  return `${base}${sufixo}`;
+}
