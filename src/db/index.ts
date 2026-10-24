@@ -16,10 +16,13 @@ import * as schema from "./schema";
 /**
  * Prefere IPv4 ao resolver o host do banco.
  *
- * Motivo real: o Node moderno ordena os endereços como o DNS devolve, o que
- * frequentemente coloca o IPv6 na frente. O host da Supabase tem IPv6, mas a
- * rede das lambdas da Vercel não alcança IPv6 — a conexão morria com
- * ENETUNREACH antes de chegar no banco.
+ * ATENÇÃO: isso não resolve host que só tem IPv6. O host direto da Supabase
+ * (db.<ref>.supabase.co) não tem registro A — só AAAA — e a rede da Vercel
+ * não alcança IPv6, então a conexão morria com ENETUNREACH. A solução foi
+ * usar o pooler (aws-0-<regiao>.pooler.supabase.com), que tem IPv4.
+ *
+ * Este trecho fica como rede de segurança: se alguém apontar DATABASE_URL
+ * para um host com os dois endereços, preferimos o IPv4.
  */
 try {
   setDefaultResultOrder("ipv4first");
