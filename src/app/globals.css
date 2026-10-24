@@ -47,6 +47,71 @@ body {
   overflow-x: hidden;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Comportamento de aplicativo, não de documento de texto                     */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * Sem isto o navegador trata a página inteira como um documento: o ponteiro
+ * vira um "I" em cima de qualquer texto, um clique marca seleção, e no celular
+ * aparece aquela barrinha piscando como se desse para escrever ali. Em site de
+ * texto isso é normal; num app (o convidado está navegando fotos, não lendo um
+ * artigo) isso só atrapalha e passa a impressão errada de "campo editável".
+ *
+ * Regra: nada é selecionável por padrão. Quem realmente precisa de seleção
+ * (campos de formulário e textos que faz sentido copiar) pede de volta.
+ */
+body {
+  cursor: default;
+  -webkit-user-select: none;
+  user-select: none;
+  /* Tira o retângulo azul que o celular pinta ao tocar. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Interfaces de toque: o dedo espera feedback visual, e botão é clicável. */
+button,
+[role="button"],
+a,
+label,
+select,
+summary {
+  cursor: pointer;
+}
+
+/*
+ * Onde a seleção volta a valer:
+ *   - campos de texto, claro;
+ *   - legendas e comentários (alguém pode querer copiar um recado);
+ *   - a classe .copia-sim, para quando quisermos liberar algo específico.
+ */
+input,
+textarea,
+[contenteditable="true"],
+.copia-sim,
+[data-selecionavel="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+  cursor: auto;
+}
+
+/* Só o campo de senha/busca etc. recebem o cursor de texto de verdade. */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="search"],
+input[type="number"],
+input[type="tel"],
+input[type="url"],
+textarea {
+  cursor: text;
+}
+
+/* Nada de contorno azul de foco em clique de mouse — só para teclado. */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
 /* Respeita o notch / barra inferior do iPhone. */
 .pb-safe {
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
