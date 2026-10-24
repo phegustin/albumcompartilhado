@@ -1,7 +1,16 @@
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { desc, sql } from "drizzle-orm";
-import { ExternalLink, LogOut, Tv, QrCode, ShieldCheck, Crown } from "lucide-react";
+import {
+  ChevronDown,
+  Crown,
+  ExternalLink,
+  LogOut,
+  PencilLine,
+  QrCode,
+  ShieldCheck,
+  Tv,
+} from "lucide-react";
 
 import { db } from "@/db";
 import { albums, mediaItems } from "@/db/schema";
@@ -9,7 +18,14 @@ import { getBaseUrl } from "@/lib/base-url";
 import { themeStyle } from "@/lib/themes";
 import { BackButton } from "@/components/ui/back-button";
 import { COOKIE_ADMIN, tokenValido } from "@/lib/admin-auth";
-import { criarAlbum, entrarAdmin, sairAdmin } from "./actions";
+import { ExcluirEvento } from "@/components/admin/excluir-evento";
+import {
+  criarAlbum,
+  editarAlbum,
+  entrarAdmin,
+  excluirAlbum,
+  sairAdmin,
+} from "./actions";
 
 /**
  * Mensagens amigáveis para cada código de erro.
@@ -28,6 +44,10 @@ const MENSAGENS_ERRO: Record<string, string> = {
     "Preencha o título e um endereço válido (use letras e números, sem acento).",
   "erro-ao-criar":
     "Não foi possível criar o evento. Pode ser um endereço (slug) já usado — tente outro nome.",
+  "erro-ao-editar": "Não foi possível salvar as alterações. Tente de novo.",
+  "erro-ao-excluir": "Não foi possível excluir. Tente de novo.",
+  "evento-nao-encontrado":
+    "Esse evento não existe mais — talvez já tenha sido excluído.",
 };
 
 /**
@@ -42,9 +62,14 @@ const MENSAGENS_ERRO: Record<string, string> = {
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ erro?: string; criado?: string }>;
+  searchParams: Promise<{
+    erro?: string;
+    criado?: string;
+    editado?: string;
+    excluido?: string;
+  }>;
 }) {
-  const { erro, criado } = await searchParams;
+  const { erro, criado, editado, excluido } = await searchParams;
   const store = await cookies();
   /*
    * Antes isso era `=== "1"`, e o cookie era forjável por qualquer pessoa.
@@ -148,6 +173,19 @@ export default async function AdminPage({
         {criado && (
           <p className="mt-5 rounded-xl border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-800">
             Evento <strong>{criado}</strong> criado com sucesso.
+          </p>
+        )}
+
+        {editado && (
+          <p className="mt-5 rounded-xl border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-800">
+            Alterações salvas.
+          </p>
+        )}
+
+        {excluido && (
+          <p className="mt-5 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            Evento <strong>{excluido}</strong> excluído, junto com as mídias,
+            curtidas e comentários dele.
           </p>
         )}
 
@@ -274,6 +312,92 @@ export default async function AdminPage({
                   {base}/e/{evento.slug}
                 </p>
               )}
+
+              {/* -------- Editar / excluir (só o criador vê) -------- */}
+              <details className="group mt-4 border-t border-album-border pt-4">
+                <summary className="flex cursor-pointer list-none items-center gap-2 text-xs font-medium text-album-muted hover:text-album-text">
+                  <PencilLine className="size-3.5" />
+                  Editar este evento
+                  <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" />
+                </summary>
+
+                <form
+                  action={editarAlbum}
+                  className="mt-4 grid gap-3 sm:grid-cols-2"
+                >
+                  <input type="hidden" name="id" value={evento.id} />
+
+                  <input
+                    name="titulo"
+                    defaultValue={evento.title}
+                    placeholder="Título"
+                    required
+                    className="rounded-xl border border-album-border bg-album-bg px-4 py-2.5 text-sm text-album-text placeholder:text-album-muted focus:border-album-accent focus:outline-none"
+                  />
+                  <input
+                    name="subtitle"
+                    defaultValue={evento.subtitle ?? ""}
+                    placeholder="Subtítulo (opcional)"
+                    className="rounded-xl border border-album-border bg-album-bg px-4 py-2.5 text-sm text-album-text placeholder:text-album-muted focus:border-album-accent focus:outline-none"
+                  />
+                  <select
+                    name="eventType"
+                    defaultValue={evento.eventType}
+                    className="rounded-xl border border-album-border bg-album-bg px-4 py-2.5 text-sm text-album-text"
+                  >
+                    <option value="WEDDING">Casamento</option>
+                    <option value="SWEET_15">15 Anos</option>
+                    <option value="GRADUATION">Formatura</option>
+                    <option value="BIRTHDAY">Aniversário</option>
+                    <option value="CORPORATE">Corporativo</option>
+                    <option value="OTHER">Outro</option>
+                  </select>
+                  <select
+                    name="theme"
+                    defaultValue={evento.theme}
+                    className="rounded-xl border border-album-border bg-album-bg px-4 py-2.5 text-sm text-album-text"
+                  >
+                    <option value="OLIVE_GOLD">Olive & Gold</option>
+                    <option value="CLASSIC_NOIR">Classic Noir</option>
+                    <option value="TERRACOTTA">Terracotta</option>
+                    <option value="ROSE_QUARTZ">Rose Quartz</option>
+                    <option value="MIDNIGHT_PARTY">Midnight Party</option>
+                  </select>
+                  <input
+                    name="studioBrandName"
+                    defaultValue={evento.studioBrandName ?? ""}
+                    placeholder="Sua marca (rodapé viral)"
+                    className="rounded-xl border border-album-border bg-album-bg px-4 py-2.5 text-sm text-album-text placeholder:text-album-muted focus:border-album-accent focus:outline-none"
+                  />
+                  <input
+                    name="studioWhatsapp"
+                    defaultValue={evento.studioWhatsapp ?? ""}
+                    placeholder="WhatsApp (com DDD)"
+                    className="rounded-xl border border-album-border bg-album-bg px-4 py-2.5 text-sm text-album-text placeholder:text-album-muted focus:border-album-accent focus:outline-none"
+                  />
+
+                  <div className="flex flex-wrap items-center gap-2 sm:col-span-2">
+                    <button
+                      type="submit"
+                      className="rounded-xl bg-album-primary px-4 py-2.5 text-sm font-semibold text-album-on-primary"
+                    >
+                      Salvar alterações
+                    </button>
+                    <span className="text-[11px] text-album-muted">
+                      O endereço <code>/e/{evento.slug}</code> e os PINs não mudam.
+                    </span>
+                  </div>
+                </form>
+              </details>
+
+              <div className="mt-4 flex justify-end">
+                <ExcluirEvento
+                  id={evento.id}
+                  titulo={evento.title}
+                  totalMidias={totalPorAlbum.get(evento.id) ?? 0}
+                  action={excluirAlbum}
+                />
+              </div>
             </article>
           ))}
         </section>

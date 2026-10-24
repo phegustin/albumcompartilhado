@@ -124,6 +124,96 @@ export async function sairAdmin() {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Editar / excluir evento                                                     */
+/* -------------------------------------------------------------------------- */
+
+/** Salva as alterações de um evento já existente. */
+export async function editarAlbum(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const titulo = String(formData.get("titulo") ?? "").trim();
+
+  if (!id || !titulo) {
+    redirect("/admin?erro=dados-invalidos");
+  }
+
+  const tipoEvento = String(formData.get("eventType") ?? "WEDDING");
+  const tema = String(formData.get("theme") ?? "OLIVE_GOLD");
+
+  try {
+    const alterados = await db
+      .update(albums)
+      .set({
+        title: titulo,
+        subtitle: String(formData.get("subtitle") ?? "").trim() || null,
+        eventType: tipoEvento as
+          | "WEDDING"
+          | "SWEET_15"
+          | "GRADUATION"
+          | "BIRTHDAY"
+          | "CORPORATE"
+          | "OTHER",
+        theme: tema as
+          | "OLIVE_GOLD"
+          | "CLASSIC_NOIR"
+          | "TERRACOTTA"
+          | "ROSE_QUARTZ"
+          | "MIDNIGHT_PARTY",
+        studioBrandName: String(formData.get("studioBrandName") ?? "").trim() || null,
+        studioWhatsapp: String(formData.get("studioWhatsapp") ?? "").trim() || null,
+        updatedAt: new Date(),
+      })
+      .where(eq(albums.id, id))
+      .returning({ id: albums.id });
+
+    // id que nao existe nao e erro de servidor: e alguem mexendo em evento
+    // que ja foi apagado.
+    if (alterados.length === 0) {
+      redirect("/admin?erro=evento-nao-encontrado");
+    }
+  } catch (e) {
+    console.error("[admin] falha ao editar evento:", e);
+    redirect("/admin?erro=erro-ao-editar");
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/");
+  redirect("/admin?editado=1");
+}
+
+/**
+ * Apaga um evento e tudo que pertence a ele.
+ *
+ * O banco já faz o serviço sujo: as foreign keys de media_items,
+ * media_likes e media_comments são `onDelete: cascade`, então as mídias,
+ * curtidas e comentários vão junto automaticamente.
+ */
+export async function excluirAlbum(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+
+  if (!id) {
+    redirect("/admin?erro=dados-invalidos");
+  }
+
+  try {
+    const [apagado] = await db
+      .delete(albums)
+      .where(eq(albums.id, id))
+      .returning({ slug: albums.slug });
+
+    if (!apagado) {
+      redirect("/admin?erro=evento-nao-encontrado");
+    }
+
+    revalidatePath("/admin");
+    revalidatePath("/");
+    redirect(`/admin?excluido=${encodeURIComponent(apagado.slug)}`);
+  } catch (e) {
+    console.error("[admin] falha ao excluir evento:", e);
+    redirect("/admin?erro=erro-ao-excluir");
+  }
+}
+
+/* -------------------------------------------------------------------------- */
 /* Criar evento                                                                */
 /* -------------------------------------------------------------------------- */
 
