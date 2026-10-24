@@ -8,6 +8,7 @@ import { albums, mediaItems } from "@/db/schema";
 import { getBaseUrl } from "@/lib/base-url";
 import { themeStyle } from "@/lib/themes";
 import { BackButton } from "@/components/ui/back-button";
+import { DownloadSelecao } from "@/components/painel/download-selecao";
 import { salvarConfiguracoes } from "./actions";
 
 /**
@@ -275,6 +276,31 @@ export default async function PainelPage({
               Salvar alterações
             </button>
           </form>
+        </section>
+
+        {/* ----------------- Download das mídias ----------------- */}
+        <section className="mb-7 rounded-3xl border border-album-border bg-album-surface p-6">
+          <h2 className="mb-1 flex items-center gap-2 text-sm font-semibold tracking-[0.2em] text-album-muted uppercase">
+            <Download className="size-4" />
+            Baixar as fotos do evento
+          </h2>
+          <p className="mb-5 text-xs text-album-muted">
+            Escolha o que levar. Saem os arquivos originais, na qualidade em que
+            foram enviados.
+          </p>
+
+          <DownloadSelecao
+            nomeEvento={album.title}
+            midias={midias.map((m) => ({
+              id: m.id,
+              thumbUrl: m.thumbUrl,
+              originalUrl: m.originalUrl,
+              uploaderName: m.uploaderName,
+              mediaType: m.mediaType,
+              categoryTag: m.categoryTag,
+              caption: m.caption,
+            }))}
+          />
         </section>
 
         {/* ---------------------- Atalhos ---------------------- */}
