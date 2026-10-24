@@ -55,6 +55,11 @@ export const categoryTagEnum = pgEnum("category_tag", [
   "RECEPCAO",
   "PISTA",
   "RECADOS",
+  // "Outros": o convidado escreve o momento com as próprias palavras
+  // (valsa, banquete, drinks...). O texto vai em media_items.category_custom.
+  // Existe para a gente não precisar inflar esta lista com dezenas de
+  // momentos que variam de festa pra festa.
+  "OUTROS",
 ]);
 
 export const mediaStatusEnum = pgEnum("media_status", [
@@ -95,6 +100,19 @@ export const albums = pgTable("albums", {
   studioBrandName: text("studio_brand_name"),
   studioWhatsapp: text("studio_whatsapp"),
 
+  /**
+   * Só álbuns com showcase = true aparecem na vitrine (/).
+   *
+   * Por que existe: a vitrine listava TODOS os álbuns do banco. Bastava
+   * alguém tocar no botão voltar dentro de um evento para cair numa lista
+   * com os eventos de todos os outros clientes — inclusive o link do painel
+   * de cada um. Vazamento de cliente na cara de outro cliente.
+   *
+   * Com isso, o padrão é NÃO aparecer: evento de cliente real fica invisível
+   * na home, e só eventos de demonstração entram na vitrine.
+   */
+  showcase: boolean("showcase").notNull().default(false),
+
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -114,6 +132,16 @@ export const mediaItems = pgTable(
 
     mediaType: mediaTypeEnum("media_type").notNull().default("PHOTO"),
     categoryTag: categoryTagEnum("category_tag").notNull().default("RECEPCAO"),
+
+    /**
+     * Texto livre do momento, usado quando categoryTag = "OUTROS".
+     *
+     * Exemplos reais que não cabem na lista fixa: valsa, banquete, drinks,
+     * hora do bolo, saída da noiva, mesa de doces. Cada festa tem os seus,
+     * então em vez de inflar o enum deixamos a pessoa escrever — e o que ela
+     * escrever fica salvo aqui e passa a ser sugerido para os próximos.
+     */
+    categoryCustom: text("category_custom"),
 
     // originalPath = caminho no bucket; originalUrl = URL do arquivo 100%
     // original (sem perda) para download dos anfitriões.
