@@ -22,6 +22,7 @@ import { themeStyle } from "@/lib/themes";
 import { BackButton } from "@/components/ui/back-button";
 import { alternarCurtida } from "@/app/e/[slug]/actions";
 import { UploadSheet, type CategoriaEnvio } from "./upload-sheet";
+import { StoriesViewer } from "./stories-viewer";
 
 export type MidiaGaleria = {
   id: string;
@@ -113,7 +114,14 @@ export function GuestView({
 
   const [filtro, setFiltro] = useState("TODOS");
   const [autorFiltro, setAutorFiltro] = useState<string | null>(null);
-  const [aberta, setAberta] = useState<MidiaGaleria | null>(null);
+  /**
+   * Guardamos o ÍNDICE (não a mídia) que abriu o stories.
+   *
+   * Assim o "avançar" percorre exatamente a lista que a pessoa está vendo —
+   * se ela filtrou só "Pista", os stories passam só pelas fotos da Pista.
+   * Guardar a mídia exigiria procurar de novo e o filtro se perderia.
+   */
+  const [storyIndex, setStoryIndex] = useState<number | null>(null);
   const [curtidas, setCurtidas] = useState<Record<string, boolean>>({});
 
   /**
@@ -408,7 +416,7 @@ export function GuestView({
             {visiveis.map((midia, i) => (
               <button
                 key={midia.id}
-                onClick={() => setAberta(midia)}
+                onClick={() => setStoryIndex(i)}
                 className={`group relative overflow-hidden rounded-2xl bg-album-surface shadow-sm transition-transform active:scale-[.98] ${ritmoDaGrade(i)}`}
               >
                 {midia.mediaType === "PHOTO" ? (
@@ -601,51 +609,19 @@ export function GuestView({
         />
       )}
 
-      {/* ========================= LIGHTBOX ========================== */}
+      {/* ==================== STORIES (tela cheia) ==================== */}
       <AnimatePresence>
-        {aberta && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-black/95 p-4"
-          >
-            <button
-              onClick={() => setAberta(null)}
-              className="absolute top-5 right-5 rounded-full bg-white/10 p-2.5 text-white"
-              aria-label="Fechar"
-            >
-              <X className="size-5" />
-            </button>
-
-            {aberta.mediaType === "PHOTO" ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={aberta.originalUrl}
-                alt={aberta.caption ?? aberta.uploaderName}
-                className="max-h-[72dvh] w-auto rounded-2xl object-contain"
-              />
-            ) : (
-              <video
-                src={aberta.originalUrl}
-                controls
-                autoPlay
-                className="max-h-[72dvh] w-auto rounded-2xl"
-              />
-            )}
-
-            <div className="mt-5 max-w-lg text-center">
-              <p className="text-sm font-semibold text-white">
-                {aberta.uploaderName}
-              </p>
-              {aberta.caption && (
-                <p className="mt-1 text-sm text-white/70">{aberta.caption}</p>
-              )}
-              <p className="mt-2 text-xs text-white/40">
-                {ROTULO_CATEGORIA[aberta.categoryTag]}
-              </p>
-            </div>
-          </motion.div>
+        {storyIndex !== null && visiveis[storyIndex] && (
+          <StoriesViewer
+            midias={visiveis}
+            indiceInicial={storyIndex}
+            curtidas={curtidas}
+            onAlternarCurtida={(id) => {
+              const alvo = visiveis.find((m) => m.id === id);
+              if (alvo) curtir(alvo);
+            }}
+            onFechar={() => setStoryIndex(null)}
+          />
         )}
       </AnimatePresence>
     </main>
