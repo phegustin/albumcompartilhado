@@ -21,7 +21,31 @@ function createPool() {
       "DATABASE_URL não definida. Copie .env.example para .env e preencha.",
     );
   }
-  return new Pool({ connectionString });
+
+  /*
+   * SSL: o Postgres local (desenvolvimento) não usa TLS; a Supabase exige.
+   * Sem isso, em produção a conexão é recusada.
+   */
+  let host = "";
+  try {
+    host = new URL(connectionString).hostname;
+  } catch {
+    /* connection string fora do padrão — cai no comportamento com SSL */
+  }
+  const isLocal = host === "localhost" || host === "127.0.0.1";
+
+  /*
+   * max: na Vercel cada lambda abre seu próprio pool. Deixar o padrão (10)
+   * estouraria o limite de conexões do plano da Supabase com poucas pessoas
+   * usando. Em produção limitamos a 3 por lambda.
+   */
+  const isProduction = process.env.NODE_ENV === "production";
+
+  return new Pool({
+    connectionString,
+    ssl: isLocal ? undefined : { rejectUnauthorized: false },
+    max: isProduction ? 3 : 10,
+  });
 }
 
 const pool = globalForDb.__albumPool ?? createPool();
