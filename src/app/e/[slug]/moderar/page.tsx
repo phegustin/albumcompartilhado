@@ -5,6 +5,7 @@ import { Check, EyeOff, Pin, RotateCcw } from "lucide-react";
 import { db } from "@/db";
 import { albums, mediaItems } from "@/db/schema";
 import { themeStyle } from "@/lib/themes";
+import { BackButton } from "@/components/ui/back-button";
 import { alterarStatus, alternarDestaque } from "./actions";
 
 /**
@@ -33,7 +34,10 @@ export default async function ModerarPage({
   /* ----------------------------- Porta ---------------------------- */
   if (!liberado) {
     return (
-      <main className="flex min-h-dvh items-center justify-center p-6" style={themeStyle(album.theme)}>
+      <main className="flex min-h-dvh flex-col items-center justify-center gap-4 p-6" style={themeStyle(album.theme)}>
+        <div className="w-full max-w-sm">
+          <BackButton destino={`/e/${slug}`} rotulo="Voltar" />
+        </div>
         <div className="w-full max-w-sm rounded-3xl border border-album-border bg-album-surface p-7 text-center">
           <h1 className="font-display text-3xl font-semibold text-album-text">
             Moderação
@@ -155,7 +159,8 @@ export default async function ModerarPage({
   return (
     <main className="min-h-dvh p-5" style={themeStyle(album.theme)}>
       <header className="mb-6">
-        <h1 className="font-display text-3xl font-semibold text-album-text">
+        <BackButton destino={`/e/${slug}`} rotulo="Voltar para o álbum" />
+        <h1 className="font-display mt-5 text-3xl font-semibold text-album-text">
           Moderação
         </h1>
         <p className="mt-0.5 text-sm text-album-muted">{album.title}</p>

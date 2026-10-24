@@ -7,6 +7,7 @@ import { db } from "@/db";
 import { albums, mediaItems } from "@/db/schema";
 import { getBaseUrl } from "@/lib/base-url";
 import { themeStyle } from "@/lib/themes";
+import { BackButton } from "@/components/ui/back-button";
 import { criarAlbum, entrarAdmin, sairAdmin } from "./actions";
 
 /**
@@ -30,7 +31,10 @@ export default async function AdminPage({
   /* ------------------------------------------------------------------ */
   if (!autorizado) {
     return (
-      <main className="flex min-h-dvh items-center justify-center p-6" style={themeStyle("CLASSIC_NOIR")}>
+      <main className="flex min-h-dvh flex-col items-center justify-center gap-4 p-6" style={themeStyle("CLASSIC_NOIR")}>
+        <div className="w-full max-w-sm">
+          <BackButton destino="/" rotulo="Voltar" />
+        </div>
         <div className="w-full max-w-sm rounded-3xl border border-album-border bg-album-surface p-7">
           <h1 className="font-display text-3xl font-semibold text-album-text">
             Super Admin
@@ -90,9 +94,10 @@ export default async function AdminPage({
   return (
     <main className="min-h-dvh p-6" style={themeStyle("CLASSIC_NOIR")}>
       <div className="mx-auto max-w-5xl">
-        <div className="flex items-center justify-between">
+        <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="font-display text-4xl font-semibold text-album-text">
+            <BackButton destino="/" rotulo="Voltar para a vitrine" />
+            <h1 className="font-display mt-5 text-4xl font-semibold text-album-text">
               Super Admin
             </h1>
             <p className="mt-1 text-sm text-album-muted">

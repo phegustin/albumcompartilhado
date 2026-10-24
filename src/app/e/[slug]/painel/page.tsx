@@ -7,6 +7,7 @@ import { db } from "@/db";
 import { albums, mediaItems } from "@/db/schema";
 import { getBaseUrl } from "@/lib/base-url";
 import { themeStyle } from "@/lib/themes";
+import { BackButton } from "@/components/ui/back-button";
 import { salvarConfiguracoes } from "./actions";
 
 /**
@@ -32,7 +33,10 @@ export default async function PainelPage({
   /* ----------------------------- Porta ---------------------------- */
   if (!liberado) {
     return (
-      <main className="flex min-h-dvh items-center justify-center p-6" style={themeStyle(album.theme)}>
+      <main className="flex min-h-dvh flex-col items-center justify-center gap-4 p-6" style={themeStyle(album.theme)}>
+        <div className="w-full max-w-sm">
+          <BackButton destino={`/e/${slug}`} rotulo="Voltar" />
+        </div>
         <div className="w-full max-w-sm rounded-3xl border border-album-border bg-album-surface p-7 text-center">
           <Crown className="mx-auto size-7 text-album-accent" />
           <h1 className="font-display mt-3 text-3xl font-semibold text-album-text">
@@ -87,7 +91,8 @@ export default async function PainelPage({
     <main className="min-h-dvh p-5" style={themeStyle(album.theme)}>
       <div className="mx-auto max-w-3xl">
         <header className="mb-7">
-          <h1 className="font-display text-4xl font-semibold text-album-text">
+          <BackButton destino={`/e/${slug}`} rotulo="Voltar para o álbum" />
+          <h1 className="font-display mt-5 text-4xl font-semibold text-album-text">
             {album.title}
           </h1>
           <p className="mt-1 text-sm text-album-muted">Painel dos anfitriões</p>

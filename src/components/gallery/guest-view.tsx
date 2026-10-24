@@ -19,6 +19,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Heart, Mic, Pin, Plus, Video, X } from "lucide-react";
 
 import { themeStyle } from "@/lib/themes";
+import { BackButton } from "@/components/ui/back-button";
 import { alternarCurtida } from "@/app/e/[slug]/actions";
 import { UploadSheet, type CategoriaEnvio } from "./upload-sheet";
 
@@ -114,6 +115,21 @@ export function GuestView({
   const [autorFiltro, setAutorFiltro] = useState<string | null>(null);
   const [aberta, setAberta] = useState<MidiaGaleria | null>(null);
   const [curtidas, setCurtidas] = useState<Record<string, boolean>>({});
+
+  /**
+   * O botão de voltar flutua sobre a capa (foto escura -> ícone branco).
+   * Quando a pessoa rola e a capa sai de cena, o fundo vira claro e o botão
+   * precisa inverter as cores pra não sumir.
+   */
+  const [passouDaCapa, setPassouDaCapa] = useState(false);
+  useEffect(() => {
+    function aoRolar() {
+      setPassouDaCapa(window.scrollY > window.innerHeight * 0.42);
+    }
+    aoRolar();
+    window.addEventListener("scroll", aoRolar, { passive: true });
+    return () => window.removeEventListener("scroll", aoRolar);
+  }, []);
 
   /* ---------------------------------------------------------------------- */
   /* localStorage                                                            */
@@ -216,6 +232,21 @@ export function GuestView({
       className="min-h-dvh pb-28"
       style={{ ...themeStyle(album.theme), background: "var(--album-bg)" }}
     >
+      {/* Voltar. Flutua sobre a capa e acompanha a rolagem. Fica num z abaixo
+          da folha de envio (z-50) e do lightbox (z-60), então desaparece
+          sozinho quando um dos dois abre. */}
+      <div
+        className="pointer-events-none fixed inset-x-0 top-0 z-30 flex justify-start px-5"
+        style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 0.875rem)" }}
+      >
+        <div className="pointer-events-auto">
+          <BackButton
+            destino="/"
+            variante={passouDaCapa ? "sobre-pagina" : "sobre-imagem"}
+          />
+        </div>
+      </div>
+
       {/* ============================ CAPA ============================ */}
       <section className="relative h-[62dvh] w-full overflow-hidden">
         {album.coverUrl ? (

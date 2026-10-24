@@ -11,6 +11,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 
 import { themeStyle } from "@/lib/themes";
+import { BackButton } from "@/components/ui/back-button";
 
 export type MidiaTelao = {
   id: string;
@@ -64,11 +65,45 @@ export function TelaoView({
 
   const atual = ordenadas[indice];
 
+  /**
+   * O telão fica projetado no salão, então um botão fixo ali atrapalharia a
+   * festa. Ele só aparece quando alguém mexe o mouse / toca na tela, e some
+   * de novo depois de 3s parado.
+   */
+  const [controlesVisiveis, setControlesVisiveis] = useState(true);
+  useEffect(() => {
+    let someEm: ReturnType<typeof setTimeout>;
+
+    function mostrar() {
+      setControlesVisiveis(true);
+      clearTimeout(someEm);
+      someEm = setTimeout(() => setControlesVisiveis(false), 3000);
+    }
+
+    mostrar();
+    window.addEventListener("mousemove", mostrar);
+    window.addEventListener("touchstart", mostrar);
+    return () => {
+      clearTimeout(someEm);
+      window.removeEventListener("mousemove", mostrar);
+      window.removeEventListener("touchstart", mostrar);
+    };
+  }, []);
+
   return (
     <div
       className="fixed inset-0 overflow-hidden"
       style={{ ...themeStyle(tema), background: "#07080d" }}
     >
+      <div
+        className={`absolute top-0 left-0 z-30 transition-opacity duration-500 ${
+          controlesVisiveis ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+        style={{ padding: "calc(env(safe-area-inset-top, 0px) + 1.25rem)" }}
+      >
+        <BackButton destino={`/e/${slug}`} variante="sobre-imagem" />
+      </div>
+
       {atual ? (
         <AnimatePresence mode="wait">
           <motion.div
