@@ -26,8 +26,15 @@ export async function salvarConfiguracoes(formData: FormData) {
       subtitle: subtitulo || null,
       capsuleMode: formData.get("capsuleMode") === "on",
       requireModeration: formData.get("requireModeration") === "on",
-      studioBrandName: String(formData.get("studioBrandName") ?? "") || null,
-      studioWhatsapp: String(formData.get("studioWhatsapp") ?? "") || null,
+      /*
+       * Marca e WhatsApp do estúdio NÃO entram aqui de propósito.
+       *
+       * Esse campo alimenta o rodapé viral ("Memórias ao vivo por [Marca] •
+       * Quer ter no seu evento? [WhatsApp]"), que é divulgação de quem
+       * presta o serviço — não do cliente. Deixar os noivos editarem
+       * permitiria trocar a marca do estúdio pela deles. Só o Super Admin
+       * mexe nisso.
+       */
       updatedAt: new Date(),
     })
     .where(eq(albums.id, album.id));

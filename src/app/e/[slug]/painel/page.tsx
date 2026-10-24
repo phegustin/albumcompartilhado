@@ -246,28 +246,32 @@ export default async function PainelPage({
               </label>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2">
-              <label className="block">
-                <span className="mb-1 block text-xs text-album-muted">
-                  Sua marca (rodapé)
-                </span>
-                <input
-                  name="studioBrandName"
-                  defaultValue={album.studioBrandName ?? ""}
-                  className="w-full rounded-xl border border-album-border bg-album-bg px-4 py-2.5 text-sm text-album-text focus:border-album-accent focus:outline-none"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-xs text-album-muted">
-                  WhatsApp
-                </span>
-                <input
-                  name="studioWhatsapp"
-                  defaultValue={album.studioWhatsapp ?? ""}
-                  className="w-full rounded-xl border border-album-border bg-album-bg px-4 py-2.5 text-sm text-album-text focus:border-album-accent focus:outline-none"
-                />
-              </label>
-            </div>
+            {/*
+             * Marca e WhatsApp aparecem aqui SOMENTE PARA LEITURA.
+             *
+             * Esse é o rodapé viral do estúdio ("Memórias ao vivo por [Marca]
+             * • Quer ter no seu evento? [WhatsApp]"). É divulgação de quem
+             * presta o serviço, não do cliente — então os noivos veem como
+             * vai ficar, mas não podem trocar. Só o Super Admin edita.
+             */}
+            {(album.studioBrandName || album.studioWhatsapp) && (
+              <div className="rounded-xl border border-album-border bg-album-bg px-4 py-3">
+                <p className="text-xs font-medium text-album-muted">
+                  Rodapé do álbum
+                </p>
+                <p className="mt-1 text-sm text-album-text">
+                  Memórias ao vivo por{" "}
+                  <strong>{album.studioBrandName || "—"}</strong>
+                  {album.studioWhatsapp && (
+                    <> • Quer ter no seu evento? {album.studioWhatsapp}</>
+                  )}
+                </p>
+                <p className="mt-1.5 text-[11px] text-album-muted">
+                  Definido por quem criou o evento. Para alterar, fale com o
+                  seu fornecedor.
+                </p>
+              </div>
+            )}
 
             <button
               type="submit"
