@@ -15,6 +15,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 
 import { urlAdmin } from "@/lib/admin-auth";
+import { codigoCurtoUnico } from "@/lib/codigo-curto";
 import { eq } from "drizzle-orm";
 
 import { db } from "@/db";
@@ -235,8 +236,10 @@ export async function criarAlbum(formData: FormData) {
   const tema = String(formData.get("theme") ?? "OLIVE_GOLD");
 
   let slug: string;
+  let codigo: string;
   try {
     slug = await slugUnico(slugBase);
+    codigo = await codigoCurtoUnico();
 
     await db.insert(albums).values({
       slug,
@@ -257,6 +260,7 @@ export async function criarAlbum(formData: FormData) {
         | "MIDNIGHT_PARTY",
       hostPin: gerarPin(),
       moderatorPin: gerarPin(),
+      shortCode: codigo, 
       studioBrandName: String(formData.get("studioBrandName") ?? "").trim() || null,
       studioWhatsapp: String(formData.get("studioWhatsapp") ?? "").trim() || null,
       showcase: formData.get("showcase") === "on",

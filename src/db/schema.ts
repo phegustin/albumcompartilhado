@@ -77,6 +77,20 @@ export const albums = pgTable("albums", {
   id: uuid("id").primaryKey().defaultRandom(),
 
   slug: text("slug").notNull().unique(),
+
+  /**
+   * Código curto do evento (ex.: "HX7K2P"), usado nos endereços curtos:
+   *   /t/<codigo>  ->  telão        (para digitar na TV)
+   *   /c/<codigo>  ->  convidados   (para mandar no WhatsApp)
+   *
+   * Por que existe: o endereço completo tem mais de 90 caracteres.
+   * Ninguém digita isso no controle remoto da TV, e fica horrível numa
+   * plaquinha de mesa. O código curto resolve os dois.
+   *
+   * Único, mas gerado e conferido no código (não só no banco) para que uma
+   * colisão vire um retry em vez de um erro 500 na criação do evento.
+   */
+  shortCode: text("short_code").unique(),
   eventType: eventTypeEnum("event_type").notNull().default("WEDDING"),
   title: text("title").notNull(), // Ex: "Helena & Gabriel"
   subtitle: text("subtitle"),

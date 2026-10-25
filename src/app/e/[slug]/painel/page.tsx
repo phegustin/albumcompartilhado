@@ -9,6 +9,7 @@ import { getBaseUrl } from "@/lib/base-url";
 import { themeStyle } from "@/lib/themes";
 import { BackButton } from "@/components/ui/back-button";
 import { DownloadSelecao } from "@/components/painel/download-selecao";
+import { LinksCurtos } from "@/components/ui/links-curtos";
 import { salvarConfiguracoes } from "./actions";
 
 /**
@@ -307,6 +308,20 @@ export default async function PainelPage({
             }))}
           />
         </section>
+
+        {/* ----------- Endereços curtos (TV e convidados) ----------- */}
+        {base && album.shortCode && (
+          <section className="rounded-2xl border border-album-border bg-album-surface p-4">
+            <h2 className="text-xs font-semibold tracking-[0.18em] text-album-muted uppercase">
+              Endereços curtos
+            </h2>
+            <p className="mt-1 text-xs text-album-muted">
+              O código abaixo substitui o endereço gigante. É só o que você
+              precisa digitar na TV ou mandar no groupo.
+            </p>
+            <LinksCurtos base={base} codigo={album.shortCode} />
+          </section>
+        )}
 
         {/* ---------------------- Atalhos ---------------------- */}
         <section className="grid gap-2 sm:grid-cols-2">

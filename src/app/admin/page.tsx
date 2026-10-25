@@ -17,6 +17,7 @@ import { getBaseUrl } from "@/lib/base-url";
 import { themeStyle } from "@/lib/themes";
 import { BackButton } from "@/components/ui/back-button";
 import { LinkEvento } from "@/components/admin/link-evento";
+import { LinksCurtos } from "@/components/ui/links-curtos";
 import { COOKIE_ADMIN, tokenValido } from "@/lib/admin-auth";
 import { ExcluirEvento } from "@/components/admin/excluir-evento";
 import {
@@ -321,7 +322,14 @@ export default async function AdminPage({
                 </Link>
               </div>
 
-              {base && <LinkEvento url={`${base}/e/${evento.slug}`} />}
+              {base && (
+                <>
+                  <LinkEvento url={`${base}/e/${evento.slug}`} />
+                  {evento.shortCode && (
+                    <LinksCurtos base={base} codigo={evento.shortCode} />
+                  )}
+                </>
+              )}
 
               {/* -------- Editar / excluir (só o criador vê) -------- */}
               <details className="group mt-4 border-t border-album-border pt-4">
