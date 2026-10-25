@@ -23,6 +23,15 @@ export type MidiaTelao = {
   createdAt: string;
 };
 
+/**
+ * De quantos em quantos segundos o telão pergunta ao servidor se chegou
+ * alguma mídia nova.
+ *
+ * 8 segundos: rápido o bastante para parecer ao vivo na festa, lento o
+ * bastante para não castigar o Wi-Fi do salão nem o plano da Vercel.
+ */
+const INTERVALO_ATUALIZACAO_MS = 8000;
+
 export function TelaoView({
   slug,
   titulo,
@@ -40,14 +49,71 @@ export function TelaoView({
 }) {
   const [indice, setIndice] = useState(0);
 
+  /**
+   * A lista de mídias agora é ESTADO, não só propriedade.
+   *
+   * Antes vinha pronta do servidor uma única vez e morria ali — foto nova
+   * não aparecia sem recarregar a página. Agora o telão consulta o servidor
+   * de poucos em poucos segundos e acrescenta o que chegou.
+   */
+  const [lista, setLista] = useState(midias);
+
+  /** Bandeja de "acabou de chegar", para o selo AO VIVO. */
+  const [chegouAgora, setChegouAgora] = useState(false);
+
+  useEffect(() => {
+    let cancelado = false;
+    let timerChegou: ReturnType<typeof setTimeout>;
+
+    async function buscar() {
+      try {
+        const resposta = await fetch(`/api/albums/${slug}/midias`, {
+          cache: "no-store",
+        });
+        if (!resposta.ok || cancelado) return;
+
+        const dados = (await resposta.json()) as { midias: MidiaTelao[] };
+        if (cancelado || !Array.isArray(dados.midias)) return;
+
+        setLista((atual) => {
+          const conhecidas = new Set(atual.map((m) => m.id));
+          const novas = dados.midias.filter((m) => !conhecidas.has(m.id));
+
+          // Nada mudou: mantém a MESMA referência, para não re-renderizar
+          // nem reiniciar o slideshow à toa.
+          if (novas.length === 0) return atual;
+
+          if (!cancelado) {
+            setChegouAgora(true);
+            clearTimeout(timerChegou);
+            timerChegou = setTimeout(() => setChegouAgora(false), 4000);
+          }
+
+          return dados.midias;
+        });
+      } catch {
+        // Festa com Wi-Fi instável: uma consulta que falha não pode derrubar
+        // o telão. Ele segue com o que já tem e tenta de novo no próximo
+        // ciclo.
+      }
+    }
+
+    const timer = setInterval(buscar, INTERVALO_ATUALIZACAO_MS);
+    return () => {
+      cancelado = true;
+      clearInterval(timer);
+      clearTimeout(timerChegou);
+    };
+  }, [slug]);
+
   // Recém-chegadas primeiro: o que acabou de ser enviado aparece logo.
   const ordenadas = useMemo(
     () =>
-      [...midias].sort(
+      [...lista].sort(
         (a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       ),
-    [midias],
+    [lista],
   );
 
   useEffect(() => {
@@ -161,7 +227,21 @@ export function TelaoView({
         >
           <p className="flex items-center gap-2 text-sm tracking-wide text-white/60 uppercase">
             <Sparkles className="size-4" style={{ color: "var(--album-accent)" }} />
-            Enviado agora por
+            {chegouAgora ? (
+              <>
+                <motion.span
+                  animate={{ opacity: [1, 0.35, 1] }}
+                  transition={{ duration: 1.2, repeat: Infinity }}
+                  className="font-semibold"
+                  style={{ color: "var(--album-accent)" }}
+                >
+                  ✨ AO VIVO AGORA ·
+                </motion.span>{" "}
+                enviado por
+              </>
+            ) : (
+              "Enviado agora por"
+            )}
           </p>
           <p className="font-display mt-1 text-5xl leading-tight font-semibold text-white">
             {atual.uploaderName}
