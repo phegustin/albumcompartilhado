@@ -324,7 +324,33 @@ export default async function AdminPage({
 
               {base && (
                 <>
-                  <LinkEvento url={`${base}/e/${evento.slug}`} />
+                  {/*
+                   * O endereço principal deste cartão é o dos NOIVOS, não o
+                   * dos convidados.
+                   *
+                   * Motivo: é este endereço que o fotógrafo/cerimonialista
+                   * copia e manda no WhatsApp para quem CONTRATOU o evento.
+                   * Mandar /e/slug (visão do convidado) para o casal entrega
+                   * a tela errada: é a tela de quem vai enviar foto, não a de
+                   * quem vai baixar o álbum, personalizar e ver os números.
+                   *
+                   * Os dois endereços abaixo já levam o PIN embutido, para a
+                   * pessoa abrir com um toque em vez de digitar 4 números no
+                   * celular.
+                   */}
+                  <LinkEvento
+                    rotulo="Noivos"
+                    url={`${base}/e/${evento.slug}/painel?pin=${evento.hostPin}`}
+                  />
+                  <LinkEvento
+                    rotulo="Cerimonialista"
+                    url={`${base}/e/${evento.slug}/moderar?pin=${evento.moderatorPin}`}
+                  />
+                  <p className="mt-2 text-[11px] leading-snug text-album-muted">
+                    Os dois links já vão com o PIN junto — quem abrir entra
+                    direto, sem digitar senha. Mande só para quem é do evento:
+                    quem tiver o link tem acesso.
+                  </p>
                   {evento.shortCode && (
                     <LinksCurtos base={base} codigo={evento.shortCode} />
                   )}

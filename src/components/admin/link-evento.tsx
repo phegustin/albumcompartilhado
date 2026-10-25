@@ -12,11 +12,15 @@
  *
  * Então aqui o endereço é link de verdade E tem botão de copiar, que
  * funciona sem depender de selecionar texto com o dedo.
+ *
+ * O rótulo é obrigatório na prática porque agora o cartão mostra mais de um
+ * endereço por evento (noivos, cerimonialista): sem ele, duas linhas de URL
+ * enormes ficariam idênticas a olho nu, e a pessoa copiaria a errada.
  */
 import { useState } from "react";
 import { Check, Copy, ExternalLink } from "lucide-react";
 
-export function LinkEvento({ url }: { url: string }) {
+export function LinkEvento({ url, rotulo }: { url: string; rotulo?: string }) {
   const [copiou, setCopiou] = useState(false);
 
   async function copiar() {
@@ -41,6 +45,12 @@ export function LinkEvento({ url }: { url: string }) {
 
   return (
     <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-album-border bg-album-bg px-3 py-2">
+      {rotulo && (
+        <span className="shrink-0 rounded-md bg-album-surface px-2 py-1 text-[10px] font-semibold tracking-wide text-album-muted uppercase">
+          {rotulo}
+        </span>
+      )}
+
       <ExternalLink className="size-3.5 shrink-0 text-album-muted" />
 
       <a
@@ -56,7 +66,7 @@ export function LinkEvento({ url }: { url: string }) {
         type="button"
         onClick={copiar}
         className="flex shrink-0 items-center gap-1.5 rounded-lg border border-album-border px-2.5 py-1.5 text-[11px] font-medium text-album-muted transition-colors hover:border-album-accent hover:text-album-text"
-        aria-label={`Copiar endereço do evento: ${url}`}
+        aria-label={`Copiar endereço${rotulo ? ` de ${rotulo}` : ""}: ${url}`}
       >
         {copiou ? (
           <>
