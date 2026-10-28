@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792780665732,
+      "tag": "0000_glorious_infant_terrible",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792877672177,
+      "tag": "0001_calm_lethal_legion",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792887629902,
+      "tag": "0002_military_sphinx",
+      "breakpoints": true
+    }
+  ]
+}
